@@ -27,7 +27,7 @@ public class EnemyAI {
 
         decisionTimer -= dt;
         if (decisionTimer > 0) return;
-        decisionTimer = decisionInterval;
+        decisionTimer = enemy.source == EnemySource.PAST_LIFE ? 0.15f : decisionInterval;
 
         behavior = enemy.behavior;
         switch (behavior) {
@@ -107,10 +107,13 @@ public class EnemyAI {
 
     private void tryUseRandomSkill() {
         if (enemy.skills == null || enemy.skills.isEmpty()) return;
-        if (Math.random() > 0.35) return;
+        // Past life enemies use skills more aggressively
+        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.55f : 0.35f;
+        if (Math.random() > chance) return;
 
-        int usableCount = (int)Math.ceil(enemy.skills.size() * skillUsageCap);
-        for (int i = 0; i < Math.min(usableCount, 2); i++) {
+        int usableCount = enemy.skills.size();
+        int maxTries = Math.min(usableCount, 3);
+        for (int i = 0; i < maxTries; i++) {
             SkillData skill = enemy.skills.get((int)(Math.random() * enemy.skills.size()));
             if (skill.isActive) { enemy.tryUseSkill(skill); break; }
         }

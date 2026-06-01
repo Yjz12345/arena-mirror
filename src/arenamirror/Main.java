@@ -270,6 +270,14 @@ public class Main extends JPanel implements KeyListener, MouseListener, MouseMot
                 }
                 break;
 
+            case "scroll_up":
+                renderer.upgradeScrollOffset--;
+                break;
+
+            case "scroll_down":
+                renderer.upgradeScrollOffset++;
+                break;
+
             // Replace confirmation
             case "replace_yes":
                 if (renderer.pendingNewSkill != null && renderer.pendingConflict != null) {

@@ -29,6 +29,7 @@ public class GameRenderer extends JPanel {
 
     // Clickable regions for current frame
     public List<ClickRegion> clickRegions = new ArrayList<>();
+    public int upgradeScrollOffset;  // scroll for upgrade list
 
     public static class ClickRegion {
         public Rectangle rect;
@@ -226,27 +227,30 @@ public class GameRenderer extends JPanel {
             }
         }
 
-        // Fire trail zone (烈焰冲刺 ground effect)
-        if (gm.player != null && gm.player.fireTrailTimer > 0 && gm.player.fireTrailPos != null) {
+        // Fire trail zone (烈焰冲刺 Lv2+ linear trail)
+        if (gm.player != null && gm.player.fireTrailTimer > 0
+            && gm.player.fireTrailStart != null && gm.player.fireTrailEnd != null) {
             float fade = Math.min(1f, gm.player.fireTrailTimer / 0.5f);
-            int ftx = cx + (int)(gm.player.fireTrailPos.x - GameManager.ARENA_CENTER.x);
-            int fty = cy + (int)(gm.player.fireTrailPos.y - GameManager.ARENA_CENTER.y);
-            int fr = (int)gm.player.fireTrailRadius;
-            // Glowing fire zone
-            g.setColor(new Color(255, 120, 20, (int)(40 * fade)));
-            g.fillOval((int)gm.player.fireTrailPos.x - fr, (int)gm.player.fireTrailPos.y - fr, fr * 2, fr * 2);
-            g.setColor(new Color(255, 160, 40, (int)(100 * fade)));
-            g.setStroke(new BasicStroke(2));
-            g.drawOval((int)gm.player.fireTrailPos.x - fr, (int)gm.player.fireTrailPos.y - fr, fr * 2, fr * 2);
+            int sx = (int)gm.player.fireTrailStart.x, sy = (int)gm.player.fireTrailStart.y;
+            int ex = (int)gm.player.fireTrailEnd.x, ey = (int)gm.player.fireTrailEnd.y;
+            int trailW = (int)gm.player.fireTrailRadius;
+            // Line segment as thick glowing trail
+            g.setColor(new Color(255, 80, 20, (int)(50 * fade)));
+            g.setStroke(new BasicStroke(trailW * 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(sx, sy, ex, ey);
             g.setStroke(new BasicStroke(1));
-            // Fire particles
-            for (int i = 0; i < 6; i++) {
-                float angle = (float)(i * Math.PI * 2 / 6 + gm.player.fireTrailTimer * 3);
-                float dist = fr * 0.5f;
-                int px = (int)(gm.player.fireTrailPos.x + Math.cos(angle) * dist);
-                int py = (int)(gm.player.fireTrailPos.y + Math.sin(angle) * dist);
-                g.setColor(new Color(255, 200, 50, (int)(120 * fade)));
-                g.fillOval(px - 3, py - 3, 6, 6);
+            // Inner bright line
+            g.setColor(new Color(255, 180, 60, (int)(120 * fade)));
+            g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(sx, sy, ex, ey);
+            g.setStroke(new BasicStroke(1));
+            // Fire particles along trail
+            for (int i = 0; i < 8; i++) {
+                float t = (i / 7f + gm.player.fireTrailTimer * 2f) % 1f;
+                int px = (int)(sx + (ex - sx) * t + (Math.random() - 0.5) * 15);
+                int py = (int)(sy + (ey - sy) * t + (Math.random() - 0.5) * 15);
+                g.setColor(new Color(255, 220, 60, (int)(150 * fade)));
+                g.fillOval(px - 2, py - 2, 5, 5);
             }
         }
 
@@ -489,13 +493,17 @@ public class GameRenderer extends JPanel {
                 } else if (name.contains("旋风")) {
                     // handled by whirl visual
                 } else if (name.contains("吸血")) {
-                    // Red healing glow
-                    g.setColor(new Color(220, 40, 40, (int)(100 * fade)));
-                    g.fillOval(px - 25, py - 25, 50, 50);
-                    g.setColor(new Color(255, 80, 80, (int)(150 * fade)));
+                    // Red healing glow matching actual range (attackRange * 1.5)
+                    int er = (int)(p.attackRange * 1.5f);
+                    g.setColor(new Color(220, 40, 40, (int)(80 * fade)));
+                    g.fillOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(255, 80, 80, (int)(140 * fade)));
                     g.setStroke(new BasicStroke(2));
-                    g.drawOval(px - 25, py - 25, 50, 50);
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
                     g.setStroke(new BasicStroke(1));
+                    // Central burst
+                    g.setColor(new Color(255, 40, 40, (int)(160 * fade)));
+                    g.fillOval(px - 12, py - 12, 24, 24);
                 } else {
                     // Projectile spawn flash
                     g.setColor(new Color(255, 255, 150, (int)(100 * fade)));
@@ -860,22 +868,41 @@ public class GameRenderer extends JPanel {
 
         if (upgrades.isEmpty()) {
             drawText(g, "没有可升级的技能", 200);
+            upgradeScrollOffset = 0;
         } else {
-            // Compact layout: smaller spacing for many skills
-            int maxVisible = 9;
-            int spacing = Math.min(42, (430 - 100) / Math.max(1, Math.min(upgrades.size(), maxVisible)));
-            int h = Math.min(spacing - 6, 30);
+            int visibleItems = 7;
+            int spacing = 42;
+            int h = 30;
+            // Clamp scroll
+            int maxOffset = Math.max(0, upgrades.size() - visibleItems);
+            if (upgradeScrollOffset > maxOffset) upgradeScrollOffset = maxOffset;
+            if (upgradeScrollOffset < 0) upgradeScrollOffset = 0;
+
             g.setFont(new Font("SansSerif", Font.PLAIN, 13));
-            for (int i = 0; i < upgrades.size() && i < maxVisible; i++) {
-                SkillData sk = upgrades.get(i);
+            for (int i = 0; i < visibleItems; i++) {
+                int idx = upgradeScrollOffset + i;
+                if (idx >= upgrades.size()) break;
+                SkillData sk = upgrades.get(idx);
                 SkillInstance inst = PlayerSkillHandler.instance.getSkillInstance(sk);
                 String label = sk.skillName + "  Lv" + inst.currentLevel + " -> Lv" + (inst.currentLevel + 1);
-                drawButton(g, label, 90 + i * spacing, 300, h, "upgrade_pick", i);
+                drawButton(g, label, 90 + i * spacing, 300, h, "upgrade_pick", idx);
             }
-            if (upgrades.size() > maxVisible) {
+
+            // Scroll indicators
+            if (upgrades.size() > visibleItems) {
+                int scrollY = 90 + visibleItems * spacing + 8;
                 g.setColor(Color.GRAY);
                 g.setFont(new Font("SansSerif", Font.PLAIN, 11));
-                drawCentered(g, "... 还有 " + (upgrades.size() - maxVisible) + " 个技能（升级后可见）", 90 + maxVisible * spacing + 15);
+                drawCentered(g, (upgradeScrollOffset + 1) + "-" + Math.min(upgradeScrollOffset + visibleItems, upgrades.size()) + " / " + upgrades.size(), scrollY);
+
+                // Up arrow
+                if (upgradeScrollOffset > 0) {
+                    drawButton(g, "↑", 60, 100, 24, "scroll_up", 0);
+                }
+                // Down arrow
+                if (upgradeScrollOffset < maxOffset) {
+                    drawButton(g, "↓", 530, 100, 24, "scroll_down", 0);
+                }
             }
         }
 

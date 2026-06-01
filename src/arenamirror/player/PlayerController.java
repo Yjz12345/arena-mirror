@@ -40,8 +40,10 @@ public class PlayerController {
     public Vec2 dashDirection;  // saved dash direction for trail rendering (not mouse-dependent)
     // Fire trail ground effect (烈焰冲刺 Lv2+)
     public float fireTrailTimer;
-    public Vec2 fireTrailPos;
-    public float fireTrailRadius = 60f;
+    public Vec2 fireTrailStart;  // linear trail start
+    public Vec2 fireTrailEnd;    // linear trail end
+    public float fireTrailRadius = 50f;
+    public float fireTrailDmgTimer;  // direct damage tick
 
     // hit effects
     public float hitFlashTimer;
@@ -109,7 +111,9 @@ public class PlayerController {
     public void resetCombatState() {
         qBuffTimer = 0; whirlTimer = 0; whirlPulseTimer = 0; whirlVisualTimer = 0;
         qFxTimer = 0; eFxTimer = 0; rightClickFxTimer = 0;
-        fireTrailTimer = 0; fireTrailPos = null;
+        fireTrailTimer = 0; fireTrailStart = null; fireTrailEnd = null; fireTrailDmgTimer = 0;
+        attackTimer = 0; comboCount = 0; swingAngle = 0;
+        hitFlashTimer = 0; lastDamageTaken = 0;
         dashTimer = 0; isDashing = false; isInvincible = false;
         dashDirection = null;
         velocity = new Vec2(0, 0);
@@ -218,18 +222,24 @@ public class PlayerController {
                 velocity = dashDirection != null ? dashDirection.scale(dashSpeed * 0.25f) : new Vec2(0, 0);
                 if (hasDashEffect("fire_trail")) {
                     GameManager gm = GameManager.instance;
-                    // Spawn fire trail zone at dash destination (Lv2: larger, longer)
                     int lv = PlayerSkillHandler.instance != null ?
                         PlayerSkillHandler.instance.getSkillLevel(findDashEffectSkill()) : 1;
-                    fireTrailTimer = lv >= 2 ? 3f : 2f;
-                    fireTrailPos = new Vec2(position);
-                    fireTrailRadius = lv >= 2 ? 80f : 60f;
+                    // Lv1: just explosion at dash end
                     if (gm != null && gm.currentEnemy != null && !gm.currentEnemy.isDead) {
-                        if (position.distance(gm.currentEnemy.position) < fireTrailRadius) {
+                        float dist = position.distance(gm.currentEnemy.position);
+                        if (dist < 80f) {
                             gm.currentEnemy.takeDamage(getEnchantDmg() + 5);
-                            gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, fireTrailTimer);
+                            gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 2f);
                             gm.currentEnemy.burnDps = 3f;
                         }
+                    }
+                    // Lv2+: linear fire trail that persists
+                    if (lv >= 2) {
+                        fireTrailTimer = 3f;
+                        fireTrailStart = new Vec2(dashStartPos);
+                        fireTrailEnd = new Vec2(position);
+                        fireTrailRadius = 50f;
+                        fireTrailDmgTimer = 0f;
                     }
                 }
                 dashDirection = null;
@@ -473,10 +483,30 @@ public class PlayerController {
         if (fireTrailTimer <= 0) return;
         GameManager gm = GameManager.instance;
         if (gm == null || gm.currentEnemy == null || gm.currentEnemy.isDead) return;
-        if (fireTrailPos != null && gm.currentEnemy.position.distance(fireTrailPos) < fireTrailRadius) {
-            gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 1.5f);
-            gm.currentEnemy.burnDps = Math.max(gm.currentEnemy.burnDps, 4f);
+        // Check distance from enemy to line segment
+        if (fireTrailStart != null && fireTrailEnd != null) {
+            float distToTrail = pointToSegmentDist(gm.currentEnemy.position, fireTrailStart, fireTrailEnd);
+            if (distToTrail < fireTrailRadius) {
+                gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 1.5f);
+                gm.currentEnemy.burnDps = Math.max(gm.currentEnemy.burnDps, 4f);
+                // Periodic direct damage
+                fireTrailDmgTimer -= dt;
+                if (fireTrailDmgTimer <= 0) {
+                    fireTrailDmgTimer = 0.5f;
+                    gm.currentEnemy.takeDamage(getEnchantDmg() + 3);
+                }
+            }
         }
+    }
+
+    /** Distance from point to line segment */
+    private float pointToSegmentDist(Vec2 p, Vec2 a, Vec2 b) {
+        Vec2 ab = new Vec2(b.x - a.x, b.y - a.y);
+        Vec2 ap = new Vec2(p.x - a.x, p.y - a.y);
+        float t = (ap.x * ab.x + ap.y * ab.y) / Math.max(0.0001f, ab.x * ab.x + ab.y * ab.y);
+        t = Math.max(0, Math.min(1, t));
+        Vec2 closest = new Vec2(a.x + ab.x * t, a.y + ab.y * t);
+        return p.distance(closest);
     }
 
     private SkillData findDashEffectSkill() {
