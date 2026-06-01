@@ -1,0 +1,7 @@
+package arenamirror.data;
+
+public enum MetaUpgradeType {
+    INITIAL_HP, INITIAL_ATTACK, INITIAL_CRIT,
+    POST_BATTLE_HEAL, REROLL_COUNT, RARE_SKILL_CHANCE,
+    REVIVAL, RESOURCE_GAIN
+}

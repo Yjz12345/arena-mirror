@@ -1,0 +1,47 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "manager",
+  "agent": {
+    "manager": {
+      "mode": "primary",
+      "description": "Dynamic session orchestrator. Delegates to 7 specialized subagents via task tool.",
+      "color": "#FF6B35",
+      "permission": {
+        "task": { "*": "deny", "manager-*": "allow" },
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+    "manager-explore": {
+      "mode": "subagent",
+      "description": "Read-only codebase exploration: find files, search code, understand architecture.",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "manager-review": {
+      "mode": "subagent",
+      "description": "Read-only code review: bugs, security, performance, style.",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "manager-debug": {
+      "mode": "subagent",
+      "description": "Debugging session: trace bugs, analyze root causes, output fix plan."
+    },
+    "manager-design": {
+      "mode": "subagent",
+      "description": "Architecture planning: design, trade-offs, API, class hierarchies.",
+      "permission": { "bash": "deny" }
+    },
+    "manager-general": {
+      "mode": "subagent",
+      "description": "General-purpose coding: write code, refactor, fix bugs, any task."
+    },
+    "manager-implement": {
+      "mode": "subagent",
+      "description": "Detailed implementation: write new features, create classes, build modules."
+    },
+    "manager-test": {
+      "mode": "subagent",
+      "description": "Test generation: unit tests, edge cases, coverage."
+    }
+  }
+}
