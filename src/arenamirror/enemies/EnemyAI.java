@@ -107,15 +107,18 @@ public class EnemyAI {
 
     private void tryUseRandomSkill() {
         if (enemy.skills == null || enemy.skills.isEmpty()) return;
-        // Past life enemies use skills more aggressively
-        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.55f : 0.35f;
+        // Past life enemies: nearly always use a skill when in range
+        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.8f : 0.35f;
         if (Math.random() > chance) return;
 
-        int usableCount = enemy.skills.size();
-        int maxTries = Math.min(usableCount, 3);
+        int maxTries = enemy.source == EnemySource.PAST_LIFE ? enemy.skills.size() : Math.min(enemy.skills.size(), 3);
         for (int i = 0; i < maxTries; i++) {
-            SkillData skill = enemy.skills.get((int)(Math.random() * enemy.skills.size()));
-            if (skill.isActive) { enemy.tryUseSkill(skill); break; }
+            SkillData skill = enemy.skills.get(i % enemy.skills.size());
+            if (skill.isActive) { 
+                enemy.tryUseSkill(skill); 
+                if (enemy.source == EnemySource.PAST_LIFE) continue; // try multiple skills
+                break; 
+            }
         }
     }
 }

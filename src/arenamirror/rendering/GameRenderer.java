@@ -227,30 +227,23 @@ public class GameRenderer extends JPanel {
             }
         }
 
-        // Fire trail zone (烈焰冲刺 Lv2+ linear trail)
-        if (gm.player != null && gm.player.fireTrailTimer > 0
-            && gm.player.fireTrailStart != null && gm.player.fireTrailEnd != null) {
-            float fade = Math.min(1f, gm.player.fireTrailTimer / 0.5f);
-            int sx = (int)gm.player.fireTrailStart.x, sy = (int)gm.player.fireTrailStart.y;
-            int ex = (int)gm.player.fireTrailEnd.x, ey = (int)gm.player.fireTrailEnd.y;
-            int trailW = (int)gm.player.fireTrailRadius;
-            // Line segment as thick glowing trail
-            g.setColor(new Color(255, 80, 20, (int)(50 * fade)));
-            g.setStroke(new BasicStroke(trailW * 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawLine(sx, sy, ex, ey);
-            g.setStroke(new BasicStroke(1));
-            // Inner bright line
-            g.setColor(new Color(255, 180, 60, (int)(120 * fade)));
-            g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawLine(sx, sy, ex, ey);
-            g.setStroke(new BasicStroke(1));
-            // Fire particles along trail
-            for (int i = 0; i < 8; i++) {
-                float t = (i / 7f + gm.player.fireTrailTimer * 2f) % 1f;
-                int px = (int)(sx + (ex - sx) * t + (Math.random() - 0.5) * 15);
-                int py = (int)(sy + (ey - sy) * t + (Math.random() - 0.5) * 15);
-                g.setColor(new Color(255, 220, 60, (int)(150 * fade)));
-                g.fillOval(px - 2, py - 2, 5, 5);
+        // Fire trail zones (烈焰冲刺 Lv2+ linear trails)
+        if (gm.player != null && !gm.player.fireTrails.isEmpty()) {
+            for (PlayerController.FireTrail ft : gm.player.fireTrails) {
+                float fade = Math.min(1f, ft.timer / 0.5f);
+                int sx = (int)ft.start.x, sy = (int)ft.start.y;
+                int ex = (int)ft.end.x, ey = (int)ft.end.y;
+                int trailW = (int)ft.radius;
+                // Outer glow (thinner)
+                g.setColor(new Color(255, 80, 20, (int)(40 * fade)));
+                g.setStroke(new BasicStroke(trailW * 0.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(sx, sy, ex, ey);
+                g.setStroke(new BasicStroke(1));
+                // Inner bright line
+                g.setColor(new Color(255, 180, 60, (int)(100 * fade)));
+                g.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(sx, sy, ex, ey);
+                g.setStroke(new BasicStroke(1));
             }
         }
 
@@ -675,6 +668,14 @@ public class GameRenderer extends JPanel {
             g.drawString(dmgText, ex - 10, ey - 20 - (int)((1 - e.hitFlashTimer / 0.1f) * 15));
         }
 
+        // Burn damage number (orange, floats up)
+        if (e.burnFlashTimer > 0) {
+            g.setColor(new Color(255, 160, 30, (int)(200 * (e.burnFlashTimer / 0.2f))));
+            g.setFont(new Font("SansSerif", Font.BOLD, 11));
+            String burnText = String.format("%.0f", e.lastDamageTaken);
+            g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
+        }
+
         g.setColor(enemyColor);
         if (e.source == EnemySource.PAST_LIFE && e.pastLifeId > 0) {
             // Draw patterned circle for past life
@@ -895,18 +896,18 @@ public class GameRenderer extends JPanel {
                 g.setFont(new Font("SansSerif", Font.PLAIN, 11));
                 drawCentered(g, (upgradeScrollOffset + 1) + "-" + Math.min(upgradeScrollOffset + visibleItems, upgrades.size()) + " / " + upgrades.size(), scrollY);
 
-                // Up arrow
+                // Up arrow (left side)
                 if (upgradeScrollOffset > 0) {
-                    drawButton(g, "↑", 60, 100, 24, "scroll_up", 0);
+                    drawButton(g, "↑", 62, 100, 24, "scroll_up", 0);
                 }
-                // Down arrow
+                // Down arrow (right side, before 返回)
                 if (upgradeScrollOffset < maxOffset) {
-                    drawButton(g, "↓", 530, 100, 24, "scroll_down", 0);
+                    drawButton(g, "↓", 90 + visibleItems * spacing, 50, 24, "scroll_down", 0);
                 }
             }
         }
 
-        drawButton(g, "返回", 520, 140, 32, "reward_back", 0);
+        drawButton(g, "返回", 540, "reward_back", 0);
     }
 
     private void drawStatUpgradeSub(Graphics2D g) {

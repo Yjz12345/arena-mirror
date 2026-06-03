@@ -38,12 +38,15 @@ public class PlayerController {
     public float shieldTimer;
     public Vec2 dashStartPos;
     public Vec2 dashDirection;  // saved dash direction for trail rendering (not mouse-dependent)
-    // Fire trail ground effect (烈焰冲刺 Lv2+)
-    public float fireTrailTimer;
-    public Vec2 fireTrailStart;  // linear trail start
-    public Vec2 fireTrailEnd;    // linear trail end
-    public float fireTrailRadius = 50f;
-    public float fireTrailDmgTimer;  // direct damage tick
+    // Fire trail ground effect (烈焰冲刺 Lv2+) - supports multiple concurrent trails
+    public static class FireTrail {
+        public Vec2 start, end;
+        public float timer;
+        public float dmgTimer;
+        public float radius = 50f;
+        public FireTrail(Vec2 s, Vec2 e, float t) { start = s; end = e; timer = t; }
+    }
+    public List<FireTrail> fireTrails = new ArrayList<>();
 
     // hit effects
     public float hitFlashTimer;
@@ -111,7 +114,7 @@ public class PlayerController {
     public void resetCombatState() {
         qBuffTimer = 0; whirlTimer = 0; whirlPulseTimer = 0; whirlVisualTimer = 0;
         qFxTimer = 0; eFxTimer = 0; rightClickFxTimer = 0;
-        fireTrailTimer = 0; fireTrailStart = null; fireTrailEnd = null; fireTrailDmgTimer = 0;
+        fireTrails.clear();
         attackTimer = 0; comboCount = 0; swingAngle = 0;
         hitFlashTimer = 0; lastDamageTaken = 0;
         dashTimer = 0; isDashing = false; isInvincible = false;
@@ -212,7 +215,12 @@ public class PlayerController {
         hitFlashTimer -= dt;
         if (whirlTimer > 0) { whirlTimer -= dt; whirlPulseTimer -= dt; }
         qFxTimer -= dt; eFxTimer -= dt; rightClickFxTimer -= dt;
-        if (fireTrailTimer > 0) fireTrailTimer -= dt;
+        // Update fire trails
+        for (int i = fireTrails.size() - 1; i >= 0; i--) {
+            FireTrail ft = fireTrails.get(i);
+            ft.timer -= dt;
+            if (ft.timer <= 0) fireTrails.remove(i);
+        }
 
         if (isDashing) {
             dashTimer -= dt;
@@ -235,11 +243,7 @@ public class PlayerController {
                     }
                     // Lv2+: linear fire trail that persists
                     if (lv >= 2) {
-                        fireTrailTimer = 3f;
-                        fireTrailStart = new Vec2(dashStartPos);
-                        fireTrailEnd = new Vec2(position);
-                        fireTrailRadius = 50f;
-                        fireTrailDmgTimer = 0f;
+                        fireTrails.add(new FireTrail(new Vec2(dashStartPos), new Vec2(position), 3f));
                     }
                 }
                 dashDirection = null;
@@ -266,7 +270,6 @@ public class PlayerController {
     private void hitFx(float dmg) {
         PlayerSkillHandler h = PlayerSkillHandler.instance;
         if (h != null && h.lifestealPercent > 0) PlayerStats.instance.heal(dmg * h.lifestealPercent);
-        if (h != null && h.reflectPercent > 0) takeDamage(dmg * h.reflectPercent);
     }
     private boolean hasEnchant(String e) { for(String s:enchantElements) if(e.equals(s)) return true; return false; }
     public boolean hasDashEffect(String e) { for(String s:dashEffects) if(e.equals(s)) return true; return false; }
@@ -295,7 +298,7 @@ public class PlayerController {
             if (gm.currentEnemy != null && !gm.currentEnemy.isDead) {
                 if (hasEnchant("ice")) { gm.currentEnemy.slowTimer = 1.0f; gm.currentEnemy.slowAmount = 0.4f; }
                 if (hasEnchant("lightning")) gm.currentEnemy.takeDamage(dmg * 0.3f);
-                if (hasEnchant("fire")) { gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 2f); gm.currentEnemy.burnDps = 5f; }
+                if (hasEnchant("fire")) { gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 3f); gm.currentEnemy.burnDps = 5f; }
             }
         }
     }
@@ -444,6 +447,15 @@ public class PlayerController {
         if (shieldTimer > 0) rawDamage *= 0.3f;
         lastDamageTaken = rawDamage; hitFlashTimer = 0.1f;
         PlayerStats.instance.takeDamage(rawDamage);
+        // Thorn reflect: when hit, damage nearby enemy
+        PlayerSkillHandler h = PlayerSkillHandler.instance;
+        if (h != null && h.reflectPercent > 0) {
+            GameManager gm = GameManager.instance;
+            if (gm != null && gm.currentEnemy != null && !gm.currentEnemy.isDead
+                && position.distance(gm.currentEnemy.position) < attackRange * 2f) {
+                gm.currentEnemy.takeDamage(rawDamage * h.reflectPercent);
+            }
+        }
     }
 
     public void applySkillModifiers() {
@@ -480,20 +492,18 @@ public class PlayerController {
     }
 
     private void updateFireTrail(float dt) {
-        if (fireTrailTimer <= 0) return;
         GameManager gm = GameManager.instance;
         if (gm == null || gm.currentEnemy == null || gm.currentEnemy.isDead) return;
-        // Check distance from enemy to line segment
-        if (fireTrailStart != null && fireTrailEnd != null) {
-            float distToTrail = pointToSegmentDist(gm.currentEnemy.position, fireTrailStart, fireTrailEnd);
-            if (distToTrail < fireTrailRadius) {
-                gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 1.5f);
-                gm.currentEnemy.burnDps = Math.max(gm.currentEnemy.burnDps, 4f);
+        for (FireTrail ft : fireTrails) {
+            float distToTrail = pointToSegmentDist(gm.currentEnemy.position, ft.start, ft.end);
+            if (distToTrail < ft.radius) {
+                gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 1.2f);
+                gm.currentEnemy.burnDps = Math.max(gm.currentEnemy.burnDps, 5f);
                 // Periodic direct damage
-                fireTrailDmgTimer -= dt;
-                if (fireTrailDmgTimer <= 0) {
-                    fireTrailDmgTimer = 0.5f;
-                    gm.currentEnemy.takeDamage(getEnchantDmg() + 3);
+                ft.dmgTimer -= dt;
+                if (ft.dmgTimer <= 0) {
+                    ft.dmgTimer = 0.4f;
+                    gm.currentEnemy.takeDamage(getEnchantDmg() + 4);
                 }
             }
         }
@@ -536,7 +546,7 @@ public class PlayerController {
                         if ("ice".equals(pp.element)) { gm.currentEnemy.slowTimer = 1.5f; gm.currentEnemy.slowAmount = 0.5f; }
                         else if ("lightning".equals(pp.element)) gm.currentEnemy.takeDamage(pp.damage * 0.4f);
                         else if ("poison".equals(pp.element)) { gm.currentEnemy.poisonStacks += 2; gm.currentEnemy.poisonTickTimer = 0.5f; }
-                        else if ("fire".equals(pp.element)) { gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 2.5f); gm.currentEnemy.burnDps = 8f; }
+                        else if ("fire".equals(pp.element)) { gm.currentEnemy.burnTimer = Math.max(gm.currentEnemy.burnTimer, 4f); gm.currentEnemy.burnDps = 8f; }
                     }
                     playerProjectiles.remove(i);
                     continue;

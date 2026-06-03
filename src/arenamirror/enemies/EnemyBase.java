@@ -51,6 +51,7 @@ public class EnemyBase {
     public float hitFlashTimer;
     public float lastDamageTaken;
     public float hitStopTimer;
+    public float burnFlashTimer;   // burn tick damage number display
 
     // attack FX
     public float attackFxTimer;
@@ -75,6 +76,16 @@ public class EnemyBase {
         float baseAtk = 8f;
         float baseSpd = 2f;
         float baseDef = 0f;
+
+        // Apply StatTendency modifiers (previously unused)
+        StatTendency tend = slot.templateData != null ? slot.templateData.statTendency : null;
+        if (tend != null) {
+            switch (tend) {
+                case SPEEDSTER:     baseSpd *= 1.5f; baseAtk *= 0.8f; break;
+                case TANK:          baseHp *= 1.5f; baseSpd *= 0.7f; break;
+                case GLASS_CANNON:  baseAtk *= 1.5f; baseHp *= 0.7f; break;
+            }
+        }
 
         LayerStatEntry ls = GameManager.instance.getLayerStats(layer);
         maxHp = baseHp * ls.hpMultiplier;
@@ -280,10 +291,14 @@ public class EnemyBase {
             burnTimer -= dt;
             // Tick every 0.2s
             if (((int)((burnTimer + 0.001f) / 0.2f)) != ((int)((burnTimer + dt + 0.001f) / 0.2f))) {
-                currentHp -= burnDps * 0.2f;
+                float tickDmg = burnDps * 0.2f;
+                currentHp -= tickDmg;
+                burnFlashTimer = 0.2f;
+                lastDamageTaken = tickDmg;
                 if (currentHp <= 0) die();
             }
         }
+        if (burnFlashTimer > 0) burnFlashTimer -= dt;
         // Poison: stacked ticks, one per 0.5s
         if (poisonStacks > 0) {
             poisonTickTimer -= dt;

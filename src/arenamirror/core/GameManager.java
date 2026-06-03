@@ -113,7 +113,7 @@ public class GameManager {
     }
 
     private void handleVictory() {
-        layerManager.handleSink(100, 99);
+        layerManager.handleSink(100, 100);
         transitionTo(GameState.VICTORY);
         fire(onVictory);
     }
