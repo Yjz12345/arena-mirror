@@ -53,6 +53,8 @@ public class Main extends JPanel implements KeyListener, MouseListener, MouseMot
         // Event -> repaint
         gm.addRestAreaListener(this::repaintRenderer);
         gm.addBattleStartListener(() -> {
+            // Clear stuck keys to prevent auto-walking after page switch
+            for (int i = 0; i < keys.length; i++) keys[i] = false;
             gm.battleManager.prepareBattle(gm.currentLayer);
             TrapManager.instance.spawnTraps(gm.layerManager.getLayer(gm.currentLayer));
             repaintRenderer();

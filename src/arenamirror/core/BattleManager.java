@@ -28,7 +28,7 @@ public class BattleManager {
         enemy.position = spawnPos;
         gm.currentEnemy = enemy;
 
-        // Reset player position
+        // Reset player position and clear stuck keys
         if (gm.player != null) {
             gm.player.position = new Vec2(GameManager.ARENA_CENTER.x - 100, GameManager.ARENA_CENTER.y);
             gm.player.velocity = new Vec2(0, 0);

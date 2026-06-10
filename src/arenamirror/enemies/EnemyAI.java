@@ -4,12 +4,13 @@ import arenamirror.core.GameManager;
 import arenamirror.core.GameState;
 import arenamirror.data.*;
 import arenamirror.rendering.Vec2;
+import java.util.*;
 
 public class EnemyAI {
     private EnemyBase enemy;
     private BehaviorPattern behavior;
     private float decisionTimer;
-    private float decisionInterval = 0.25f;
+    private float decisionInterval = 0.18f;  // was 0.25
     private float skillUsageCap = 0.7f;
 
     private float approachDist = 50f;
@@ -27,7 +28,7 @@ public class EnemyAI {
 
         decisionTimer -= dt;
         if (decisionTimer > 0) return;
-        decisionTimer = enemy.source == EnemySource.PAST_LIFE ? 0.15f : decisionInterval;
+        decisionTimer = enemy.source == EnemySource.PAST_LIFE ? 0.12f : decisionInterval;
 
         behavior = enemy.behavior;
         switch (behavior) {
@@ -41,17 +42,22 @@ public class EnemyAI {
 
     private void meleeAggressive() {
         float dist = enemy.distanceToPlayer();
-        if (dist > approachDist) {
+        float meleeRange = enemy.source == EnemySource.PAST_LIFE ? 40f : 30f;
+        float appDist = enemy.source == EnemySource.PAST_LIFE ? 60f : approachDist;
+        // Past life: always try skills regardless of distance
+        if (enemy.source == EnemySource.PAST_LIFE) tryUseRandomSkill();
+        if (dist > appDist) {
             enemy.velocity = enemy.directionToPlayer().scale(enemy.moveSpeed * 1.3f);
         } else {
-            tryUseRandomSkill();
+            if (enemy.source != EnemySource.PAST_LIFE) tryUseRandomSkill();
             // Circle strafe + melee hit
             Vec2 dir = enemy.directionToPlayer();
             enemy.velocity = new Vec2(-dir.y, dir.x).scale(enemy.moveSpeed * 0.5f);
             // Melee attack: high contact damage
-            if (dist < 30f && enemy.attackTimer <= 0) {
+            if (dist < meleeRange && enemy.attackTimer <= 0) {
                 GameManager.instance.player.takeDamage(enemy.attack * 1.2f);
-                enemy.attackTimer = 0.45f;
+                if (enemy.lifestealPct > 0) enemy.heal(enemy.attack * 1.2f * enemy.lifestealPct);
+                enemy.attackTimer = 0.35f;
                 enemy.attackFxTimer = 0.25f;
                 enemy.lastAttackDir = enemy.directionToPlayer();
             }
@@ -60,24 +66,31 @@ public class EnemyAI {
 
     private void rangedKiting() {
         float dist = enemy.distanceToPlayer();
-        if (dist < kitingDist * 0.6f) {
+        float kDist = enemy.source == EnemySource.PAST_LIFE ? 180f : kitingDist;
+        float fireRate = enemy.source == EnemySource.PAST_LIFE ? 0.8f : 1.5f;
+        if (dist < kDist * 0.5f) {
             enemy.velocity = enemy.directionToPlayer().scale(-enemy.moveSpeed);
-        } else if (dist > kitingDist * 1.3f) {
+        } else if (dist > kDist * 1.5f) {
             enemy.velocity = enemy.directionToPlayer().scale(enemy.moveSpeed * 0.5f);
         } else {
             enemy.velocity = new Vec2(0, 0);
-            // Fire projectile at player periodically
-            if (enemy.projectileTimer <= 0) {
+            // Past life: never fire generic projectile, only use actual skills
+            if (enemy.source != EnemySource.PAST_LIFE && enemy.projectileTimer <= 0) {
                 fireProjectile();
-                enemy.projectileTimer = 1.5f;
+                enemy.projectileTimer = fireRate;
             }
             tryUseRandomSkill();
         }
     }
 
     private void summoner() {
+        // Past life: don't use generic summon projectiles, use skills instead
+        if (enemy.source == EnemySource.PAST_LIFE) {
+            enemy.velocity = enemy.directionToPlayer().scale(-enemy.moveSpeed * 0.7f);
+            tryUseRandomSkill();
+            return;
+        }
         enemy.velocity = enemy.directionToPlayer().scale(-enemy.moveSpeed * 0.7f);
-        // "Summon" = fire multiple projectiles
         if (enemy.projectileTimer <= 0) {
             for (int i = 0; i < 3; i++) {
                 Vec2 offset = new Vec2((float)(Math.random() - 0.5) * 30, (float)(Math.random() - 0.5) * 30);
@@ -102,22 +115,27 @@ public class EnemyAI {
     }
 
     private void fireProjectile() {
-        enemy.activeProjectiles.add(new EnemyProjectile(new Vec2(enemy.position), 3f));
+        enemy.activeProjectiles.add(new EnemyProjectile(new Vec2(enemy.position), 3f, 0));
     }
 
     private void tryUseRandomSkill() {
         if (enemy.skills == null || enemy.skills.isEmpty()) return;
-        // Past life enemies: nearly always use a skill when in range
-        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.8f : 0.35f;
+        // Normal enemies use skills more often too
+        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.85f : 0.45f;
         if (Math.random() > chance) return;
 
-        int maxTries = enemy.source == EnemySource.PAST_LIFE ? enemy.skills.size() : Math.min(enemy.skills.size(), 3);
-        for (int i = 0; i < maxTries; i++) {
-            SkillData skill = enemy.skills.get(i % enemy.skills.size());
-            if (skill.isActive) { 
-                enemy.tryUseSkill(skill); 
-                if (enemy.source == EnemySource.PAST_LIFE) continue; // try multiple skills
-                break; 
+        if (enemy.source == EnemySource.PAST_LIFE) {
+            // Try all active skills in random order (use Q/E/weapon slots)
+            List<SkillData> shuffled = new ArrayList<>(enemy.skills);
+            java.util.Collections.shuffle(shuffled);
+            for (SkillData skill : shuffled) {
+                if (skill.isActive) enemy.tryUseSkill(skill);
+            }
+        } else {
+            int maxTries = Math.min(enemy.skills.size(), 3);
+            for (int i = 0; i < maxTries; i++) {
+                SkillData skill = enemy.skills.get((int)(Math.random() * enemy.skills.size()));
+                if (skill.isActive) { enemy.tryUseSkill(skill); break; }
             }
         }
     }

@@ -56,44 +56,28 @@ public class EnemyFactory {
 
         switch (name) {
             case "投射火球": case "冰霜射击": case "多重箭": case "闪电链":
-                skill.cooldown = 2f + rng.nextFloat() * 2f;
-                skill.hasTelegraph = true;
-                skill.telegraphDuration = 0.5f + rng.nextFloat() * 0.3f;
+                skill.cooldown = 1.2f + rng.nextFloat() * 1f;
                 break;
             case "冲锋":
-                skill.cooldown = 3f + rng.nextFloat() * 2f;
-                skill.hasTelegraph = true;
-                skill.telegraphDuration = 0.4f;
+                skill.cooldown = 1.5f + rng.nextFloat() * 1f;
                 break;
             case "地震践踏": case "自爆":
-                skill.cooldown = 4f + rng.nextFloat() * 3f;
-                skill.hasTelegraph = true;
-                skill.telegraphDuration = 0.7f + rng.nextFloat() * 0.3f;
+                skill.cooldown = 2f + rng.nextFloat() * 1.5f;
                 break;
             case "毒雾": case "狂暴":
-                skill.cooldown = 5f + rng.nextFloat() * 4f;
-                skill.hasTelegraph = true;
-                skill.telegraphDuration = 0.6f;
+                skill.cooldown = 3f + rng.nextFloat() * 2f;
                 break;
             case "直线弹": case "激光束":
-                skill.cooldown = 2.5f + rng.nextFloat() * 2f;
-                skill.hasTelegraph = true;
-                skill.telegraphDuration = 0.6f + rng.nextFloat() * 0.3f;
+                skill.cooldown = 1f + rng.nextFloat() * 1f;
                 break;
             case "落石预警":
-                skill.cooldown = 3f + rng.nextFloat() * 3f;
-                skill.hasTelegraph = true;
-                skill.telegraphDuration = 0.9f;
+                skill.cooldown = 1.5f + rng.nextFloat() * 1.5f;
                 break;
             case "吸血打击":
-                skill.cooldown = 3f + rng.nextFloat() * 2f;
-                skill.hasTelegraph = rng.nextDouble() < 0.5;
-                skill.telegraphDuration = 0.4f;
+                skill.cooldown = 1.5f + rng.nextFloat() * 1f;
                 break;
             default: // 重型劈砍
-                skill.cooldown = 1.5f + rng.nextFloat() * 2f;
-                skill.hasTelegraph = rng.nextDouble() < 0.3;
-                skill.telegraphDuration = 0.3f + rng.nextFloat() * 0.3f;
+                skill.cooldown = 0.8f + rng.nextFloat() * 1f;
         }
 
         return skill;

@@ -18,6 +18,9 @@ public class PlayerStats {
     public float critDamage = 1.5f;
     public float pickupRange = 1f;
 
+    // Raw (pre-multiplier) bases to prevent rebuildMods accumulation
+    public float rawMaxHp, rawAttack, rawSpeed, rawDefense;
+
     // meta bonuses
     public float metaHpBonus;
     public float metaAttackBonus;
@@ -49,6 +52,12 @@ public class PlayerStats {
         currentHp = maxHp;
         pickupRange = 1f;
         metaRevivalUsed = false;
+
+        // Save raw bases (without multipliers) to prevent rebuildMods accumulation
+        rawMaxHp = maxHp;
+        rawAttack = attack;
+        rawSpeed = moveSpeed;
+        rawDefense = defense;
 
         // Sync to player controller
         if (PlayerController.instance != null) {
@@ -101,33 +110,29 @@ public class PlayerStats {
     }
 
     public void applySkillBonus(SkillData skill) {
-        maxHp += skill.maxHpBonus;
-        attack += skill.attackBonus;
-        moveSpeed += skill.speedBonus;
+        rawMaxHp += skill.maxHpBonus;
+        rawAttack += skill.attackBonus;
+        rawSpeed += skill.speedBonus;
         defense += skill.defenseBonus;
+        rawDefense += skill.defenseBonus;
         critChance += skill.critChanceBonus;
         critDamage += skill.critDamageBonus;
         pickupRange += skill.pickupRangeBonus;
-
-        PlayerController.instance.moveSpeed = moveSpeed;
-        PlayerController.instance.attackDamage = attack;
     }
 
     public void removeSkillBonus(SkillData skill) {
-        maxHp -= skill.maxHpBonus;
-        attack -= skill.attackBonus;
-        moveSpeed -= skill.speedBonus;
+        rawMaxHp -= skill.maxHpBonus;
+        rawAttack -= skill.attackBonus;
+        rawSpeed -= skill.speedBonus;
         defense -= skill.defenseBonus;
+        rawDefense -= skill.defenseBonus;
         critChance -= skill.critChanceBonus;
         critDamage -= skill.critDamageBonus;
         pickupRange -= skill.pickupRangeBonus;
-
-        PlayerController.instance.moveSpeed = moveSpeed;
-        PlayerController.instance.attackDamage = attack;
     }
 
     private CharacterData createDefaultCharacter() {
-        CharacterData c = new CharacterData("战士", 100f, 10f, 4f);
+        CharacterData c = new CharacterData("战士", 100f, 10f, 4.8f);
         c.description = "初始角色，均衡属性";
         c.qUltimate = new SkillData("战吼", "怒吼提升攻击力50%，持续3秒", SkillRarity.UNCOMMON, true, SkillCategory.Q_ULTIMATE);
         c.qUltimate.cooldown = 12f;

@@ -57,10 +57,10 @@ public class RewardSystem {
         if (stats == null || statValues == null || index >= statValues.length) return;
         float val = statValues[index];
         switch (index) {
-            case 0: stats.maxHp += val; stats.heal(val); break;
-            case 1: stats.attack += val; if (PlayerController.instance != null) PlayerController.instance.attackDamage = stats.attack; break;
-            case 2: stats.moveSpeed += val; if (PlayerController.instance != null) PlayerController.instance.moveSpeed = stats.moveSpeed; break;
-            case 3: stats.defense += val; break;
+            case 0: stats.rawMaxHp += val; stats.maxHp = stats.rawMaxHp; stats.heal(val); break;
+            case 1: stats.rawAttack += val; break;
+            case 2: stats.rawSpeed += val; break;
+            case 3: stats.rawDefense += val; break;
             case 4: stats.critChance += val; break;
         }
     }

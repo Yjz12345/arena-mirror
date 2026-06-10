@@ -251,10 +251,19 @@ public class GameRenderer extends JPanel {
         if (gm.currentEnemy != null) {
             // Draw enemy projectiles (with lifetime, dodgeable)
             for (EnemyProjectile ep : gm.currentEnemy.activeProjectiles) {
-                float fade = Math.min(1f, ep.lifetime / 0.5f); // fade out in last 0.5s
-                g.setColor(new Color(255, 100, 80, (int)(180 * fade)));
+                float fade = Math.min(1f, ep.lifetime / 0.5f);
+                Color outer, inner;
+                switch (ep.colorType) {
+                    case 1:  outer = new Color(100, 180, 255); inner = new Color(60, 140, 255); break;  // ice
+                    case 2:  outer = new Color(255, 230, 50); inner = new Color(255, 200, 30); break;   // lightning
+                    case 3:  outer = new Color(255, 100, 255); inner = new Color(255, 50, 255); break;  // laser
+                    case 4:  outer = new Color(200, 200, 200); inner = new Color(255, 255, 255); break; // straight
+                    case 5:  outer = new Color(120, 255, 50); inner = new Color(80, 200, 30); break;    // poison
+                    default: outer = new Color(255, 100, 80); inner = new Color(255, 60, 40); break;    // fire
+                }
+                g.setColor(new Color(outer.getRed(), outer.getGreen(), outer.getBlue(), (int)(180 * fade)));
                 g.fillOval((int)ep.position.x - 5, (int)ep.position.y - 5, 10, 10);
-                g.setColor(new Color(255, 60, 40, (int)(255 * fade)));
+                g.setColor(new Color(inner.getRed(), inner.getGreen(), inner.getBlue(), (int)(255 * fade)));
                 g.fillOval((int)ep.position.x - 3, (int)ep.position.y - 3, 6, 6);
             }
             drawEnemy(g, gm.currentEnemy);

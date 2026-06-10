@@ -16,8 +16,8 @@ public class PlayerController {
     public Vec2 aimDirection = new Vec2(0, -1);
     public Vec2 mouseWorldPos = new Vec2(0, 0);
 
-    public float moveSpeed = 5f;
-    public float baseMoveSpeed = 5f;
+    public float moveSpeed = 4.8f;
+    public float baseMoveSpeed = 4.8f;
 
     // ── dash ──
     public boolean isDashing;
@@ -183,7 +183,9 @@ public class PlayerController {
     public void handleMouseClick(int button) {
         GameManager gm = GameManager.instance;
         if (gm == null || gm.currentState != GameState.BATTLE || gm.isPaused) return;
-        if (whirlTimer > 0) return; // no attacks during whirl
+        // Allow attacks during 雷暴, block during 旋风
+        boolean isStorm = qUltimate != null && qUltimate.skillName.contains("雷暴");
+        if (whirlTimer > 0 && !isStorm) return;
 
         if (button == MouseEvent.BUTTON1 && attackTimer <= 0) performAttack();
         else if (button == MouseEvent.BUTTON3 && rightClickCooldown <= 0) tryRightClick();
@@ -502,8 +504,8 @@ public class PlayerController {
                 // Periodic direct damage
                 ft.dmgTimer -= dt;
                 if (ft.dmgTimer <= 0) {
-                    ft.dmgTimer = 0.4f;
-                    gm.currentEnemy.takeDamage(getEnchantDmg() + 4);
+                    ft.dmgTimer = 0.5f;
+                    gm.currentEnemy.takeDamage(getEnchantDmg() + 2);
                 }
             }
         }

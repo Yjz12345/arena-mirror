@@ -129,13 +129,18 @@ public class PlayerSkillHandler {
             else if (n.contains("范围")) rangeBonus = 15f * lv;
             else if (n.contains("暴击强化")) s.critChance += 0.15f * lv;
             else if (n.contains("暴击伤害")) s.critDamage += 0.5f * lv;
-            else if (n.contains("防御精通")) s.defense += 15 * lv;
+            else if (n.contains("防御精通")) { s.rawDefense += 15 * lv; s.defense = s.rawDefense; }
             else if (n.contains("荆棘")) reflectPercent = 0.2f * lv;
         }
-        s.attack *= attackMultiplier; pc.attackDamage = s.attack;
+        // Always recalculate from raw bases to prevent multiplicative accumulation
+        s.attack = s.rawAttack * attackMultiplier;
+        s.maxHp = s.rawMaxHp * hpMultiplier;
+        s.moveSpeed = s.rawSpeed * speedMultiplier;
+        pc.attackDamage = s.attack;
         pc.moveSpeed = s.moveSpeed * speedMultiplier;
         pc.attackRange = pc.baseAttackRange + rangeBonus;
-        if (hpMultiplier>1f){float p=s.currentHp/Math.max(1,s.maxHp);s.maxHp*=hpMultiplier;s.currentHp=s.maxHp*Math.min(1,p);}
+        // Clamp current HP to max
+        if (s.currentHp > s.maxHp) s.currentHp = s.maxHp;
     }
 
     // ── upgrade ──

@@ -81,10 +81,8 @@ public class SkillManager {
         for (SkillData skill : globalSkillPool) {
             if (skill.category == SkillCategory.WEAPON_EXCLUSIVE) continue;
             SkillInstance inst = handler != null ? handler.getSkillInstance(skill) : null;
-            // Skip passives already at max level (they are upgraded, not re-drawn)
-            if (inst != null && skill.category == SkillCategory.STAT_MODIFIER) {
-                if (inst.currentLevel >= skill.maxLevel) continue;
-            }
+            // Stat modifier passives: never re-draw if already owned (upgrade via 升级)
+            if (inst != null && skill.category == SkillCategory.STAT_MODIFIER) continue;
             // Skip active/slot skills already owned (must replace to reacquire)
             if (inst != null && skill.category != SkillCategory.STAT_MODIFIER) continue;
             available.add(skill);

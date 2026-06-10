@@ -42,6 +42,8 @@ public class EnemyBase {
     public float selfBuffTimer;
     public float baseAttack;   // saved for buff reset
     public float baseMoveSpeed;
+    public float lifestealPct;  // past life passive
+    public float reflectPct;   // past life passive
 
     public boolean isTelegraphing;
     public float telegraphTimer;
@@ -68,13 +70,15 @@ public class EnemyBase {
         source = slot.enemySource;
         layerNumber = layer;
         pastLifeId = slot.pastLifeId;
-        skills = slot.originalSkills != null ? new ArrayList<>(slot.originalSkills) : new ArrayList<>();
+        skills = slot.originalSkills != null ? new ArrayList<>(slot.originalSkills)
+            : (slot.templateData != null && slot.templateData.skills != null
+                ? new ArrayList<>(slot.templateData.skills) : new ArrayList<>());
         behavior = slot.templateData != null ? slot.templateData.behavior : BehaviorPattern.MELEE_AGGRESSIVE;
 
         // Standard base values — past life enemies scale to layer baseline, not player's raw stats
         float baseHp = 100f;
-        float baseAtk = 8f;
-        float baseSpd = 2f;
+        float baseAtk = 12f;
+        float baseSpd = 2.5f;
         float baseDef = 0f;
 
         // Apply StatTendency modifiers (previously unused)
@@ -89,7 +93,7 @@ public class EnemyBase {
 
         LayerStatEntry ls = GameManager.instance.getLayerStats(layer);
         maxHp = baseHp * ls.hpMultiplier;
-        attack = baseAtk * ls.attackMultiplier * 2f;
+        attack = baseAtk * ls.attackMultiplier * 2.5f;
         moveSpeed = baseSpd * ls.speedMultiplier;
         defense = baseDef * ls.defenseMultiplier;
         currentHp = maxHp;
@@ -97,7 +101,27 @@ public class EnemyBase {
         baseMoveSpeed = moveSpeed;
 
         for (SkillData s : skills) {
-            if (s.isActive) skillCooldowns.put(s, (float)(Math.random() * s.cooldown * 0.5));
+            if (s.isActive) {
+                // Past life enemies: drastically shorter cooldowns
+                float cdMult = source == EnemySource.PAST_LIFE ? 0.05f : 0.5f;
+                skillCooldowns.put(s, (float)(Math.random() * s.cooldown * cdMult));
+            }
+        }
+
+        // Past life enemies inherit passive benefits from their skills
+        if (source == EnemySource.PAST_LIFE) {
+            for (SkillData s : skills) {
+                String n = s.skillName;
+                if (n == null) continue;
+                if (n.contains("攻击倍率")) attack *= (1f + 0.2f * s.maxLevel);
+                if (n.contains("生命倍率")) { maxHp *= (1f + 0.15f * s.maxLevel); currentHp = maxHp; }
+                if (n.contains("速度倍率")) moveSpeed *= (1f + 0.1f * s.maxLevel);
+                if (n.contains("防御精通")) defense += 15 * s.maxLevel;
+                if (n.contains("吸血")) lifestealPct = 0.1f * s.maxLevel;
+                if (n.contains("荆棘")) reflectPct = 0.2f * s.maxLevel;
+            }
+            baseAttack = attack;
+            baseMoveSpeed = moveSpeed;
         }
     }
 
@@ -150,9 +174,14 @@ public class EnemyBase {
             EnemyProjectile ep = activeProjectiles.get(i);
             ep.lifetime -= dt;
             Vec2 p = ep.position;
-            Vec2 dir = gm.player.position.sub(p).normalized();
-            p.x += dir.x * dt * 150f;
-            p.y += dir.y * dt * 150f;
+            if (ep.homing) {
+                Vec2 dir = gm.player.position.sub(p).normalized();
+                p.x += dir.x * dt * 150f;
+                p.y += dir.y * dt * 150f;
+            } else {
+                p.x += ep.velocity.x * dt;
+                p.y += ep.velocity.y * dt;
+            }
             if (p.distance(gm.player.position) < 15f) {
                 gm.player.takeDamage(attack * 0.5f);
                 activeProjectiles.remove(i);
@@ -176,9 +205,10 @@ public class EnemyBase {
         Float cd = skillCooldowns.get(skill);
         if (cd != null && cd > 0) return false;
 
+        float cdVal = source == EnemySource.PAST_LIFE ? skill.cooldown * 0.15f : skill.cooldown;
         if (skill.hasTelegraph) {
             isTelegraphing = true; telegraphTimer = skill.telegraphDuration;
-            queuedSkill = skill; skillCooldowns.put(skill, skill.cooldown);
+            queuedSkill = skill; skillCooldowns.put(skill, cdVal);
             return true;
         }
         castSkill(skill);
@@ -186,7 +216,8 @@ public class EnemyBase {
     }
 
     private void castSkill(SkillData skill) {
-        skillCooldowns.put(skill, skill.cooldown);
+        float cdVal = source == EnemySource.PAST_LIFE ? skill.cooldown * 0.15f : skill.cooldown;
+        skillCooldowns.put(skill, cdVal);
         attackFxTimer = 0.3f;
         lastAttackDir = directionToPlayer();
         GameManager gm = GameManager.instance;
@@ -195,35 +226,37 @@ public class EnemyBase {
         String name = skill.skillName;
         float dist = position.distance(gm.player.position);
 
-        // ── Linear projectile ──
+        // ── Linear projectile (straight, non-homing) ──
         if (name.contains("直线弹")) {
             Vec2 dir = gm.player.position.sub(position).normalized();
-            for (int i = 1; i <= 3; i++) {
-                Vec2 off = new Vec2(-dir.y * (i-1) * 15, dir.x * (i-1) * 15);
-                spawnProj(position.add(off), 2.5f);
+            for (int i = 0; i < 4; i++) {
+                Vec2 off = new Vec2(-dir.y * (i-1.5f) * 18, dir.x * (i-1.5f) * 18);
+                activeProjectiles.add(new EnemyProjectile(position.add(off), 2.5f, dir.scale(250f), 4));
             }
         }
         // ── Falling rock with telegraph ──
         else if (name.contains("落石")) {
             Vec2 target = gm.player.position;
-            // Spawn rock projectile at target (deals heavy damage if not dodged)
-            spawnProj(new Vec2(target.x, target.y - 120), 1.5f);
+            activeProjectiles.add(new EnemyProjectile(new Vec2(target.x, target.y - 120), 1.5f));
         }
-        // ── Laser beam ──
+        // ── Laser beam (instant line, fast straight projectile) ──
         else if (name.contains("激光")) {
             Vec2 dir = gm.player.position.sub(position).normalized();
-            // Multiple fast projectiles in a line
             for (int i = 0; i < 5; i++) {
                 Vec2 off = position.add(dir.scale(i * 15));
-                spawnProj(off, 2f);
+                activeProjectiles.add(new EnemyProjectile(off, 1f, dir.scale(400f), 3));
             }
         }
-        // ── Projectile attacks ──
+        // ── Projectile attacks (tracking) ──
         else if (name.contains("投射") || name.contains("射击") || name.contains("箭") || name.contains("弹") || name.contains("波") || name.contains("链")) {
-            spawnProj(position, 3f);
+            int type = 0; // default fire
+            if (name.contains("冰")) type = 1;
+            else if (name.contains("雷") || name.contains("闪电") || name.contains("链")) type = 2;
+            else if (name.contains("毒")) type = 5;
+            spawnProj(position, 3f, type);
             if (name.contains("多重")) {
-                spawnProj(new Vec2(position.x + 15, position.y), 3f);
-                spawnProj(new Vec2(position.x - 15, position.y), 3f);
+                spawnProj(new Vec2(position.x + 15, position.y), 3f, type);
+                spawnProj(new Vec2(position.x - 15, position.y), 3f, type);
             }
             if (name.contains("冰")) {
                 float d = position.distance(gm.player.position);
@@ -281,7 +314,7 @@ public class EnemyBase {
         }
     }
 
-    private void heal(float amount) {
+    public void heal(float amount) {
         currentHp = Math.min(maxHp, currentHp + amount);
     }
 
@@ -312,7 +345,10 @@ public class EnemyBase {
     }
 
     private void spawnProj(Vec2 pos, float life) {
-        activeProjectiles.add(new EnemyProjectile(pos, life));
+        activeProjectiles.add(new EnemyProjectile(pos, life, 0));
+    }
+    private void spawnProj(Vec2 pos, float life, int type) {
+        activeProjectiles.add(new EnemyProjectile(pos, life, type));
     }
 
     public void takeDamage(float rawDamage) {
@@ -322,6 +358,10 @@ public class EnemyBase {
         currentHp = Math.max(0, currentHp - reduced);
         lastDamageTaken = reduced;
         hitFlashTimer = 0.1f;
+        // Reflect damage (荆棘 passive on past life enemies)
+        if (reflectPct > 0 && GameManager.instance != null && GameManager.instance.player != null) {
+            GameManager.instance.player.takeDamage(reduced * reflectPct);
+        }
         if (currentHp <= 0f) die();
     }
 
