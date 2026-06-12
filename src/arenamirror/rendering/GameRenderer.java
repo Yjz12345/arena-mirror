@@ -86,6 +86,26 @@ public class GameRenderer extends JPanel {
         }
     }
 
+    /** 定向粒子爆发（朝指定方向 ±17° 锥形散射） */
+    public static void spawnParticlesDirected(float x, float y, int count, Color color, float speed, Vec2 direction) {
+        if (instance == null) return;
+        Random rng = new Random();
+        for (int i = 0; i < count; i++) {
+            Particle p = new Particle();
+            p.x = x; p.y = y;
+            float baseAngle = (float)Math.atan2(direction.y, direction.x);
+            float angle = baseAngle + (rng.nextFloat() - 0.5f) * 0.6f;
+            float spd = speed * (0.5f + rng.nextFloat() * 0.5f);
+            p.vx = (float)Math.cos(angle) * spd;
+            p.vy = (float)Math.sin(angle) * spd;
+            p.life = 0.3f + rng.nextFloat() * 0.3f;
+            p.maxLife = p.life;
+            p.size = 2 + rng.nextFloat() * 3;
+            p.color = color;
+            instance.particles.add(p);
+        }
+    }
+
     public void setGameManager(GameManager gm) { this.gm = gm; }
 
     // Called by Main.mousePressed to find which button was clicked
@@ -386,6 +406,11 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(3));
             g.drawOval(px - qr, py - qr, qr * 2, qr * 2);
             g.setStroke(new BasicStroke(1));
+
+            // Q 激活爆发粒子 (最初 0.1 秒)
+            if (p.qFxTimer > 0.55f) {
+                GameRenderer.spawnParticles(px, py, 18, new Color(255, 200, 50), 175f);
+            }
         }
 
         // ── Q buff glow (战吼) ──
@@ -556,6 +581,43 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(2.5f * fade));
             g.drawLine(px, py, sx, sy);
             g.setStroke(new BasicStroke(1));
+
+            // ── 挥砍粒子 + combo 递增特效 ──
+            float attackMax = 1f / p.attackSpeed;
+            if (p.attackTimer > attackMax - 0.03f) {
+                // 还原出这次挥砍的 combo 编号 (comboCount 已在 performAttack 中递增)
+                int swingCombo = (p.comboCount + 2) % 3;
+                int particleCount;
+                if (swingCombo == 0) particleCount = 5;
+                else if (swingCombo == 1) particleCount = 8;
+                else particleCount = 12;
+
+                // 挥砍粒子：在 swingAngle ±30° 扇形方向
+                Color slashColor = getEnchantArcColor(p);
+                for (int i = 0; i < particleCount; i++) {
+                    Particle sp = new Particle();
+                    sp.x = px; sp.y = py;
+                    float pa = a + (float)(Math.random() - 0.5) * (float)Math.toRadians(60);
+                    float spd = 80 + (float)Math.random() * 120;
+                    sp.vx = (float)Math.cos(pa) * spd;
+                    sp.vy = (float)Math.sin(pa) * spd;
+                    sp.life = 0.3f + (float)Math.random() * 0.2f;
+                    sp.maxLife = sp.life;
+                    sp.size = 2 + (float)Math.random() * 3;
+                    sp.color = slashColor;
+                    particles.add(sp);
+                }
+
+                // Combo 1+: 冲击环
+                if (swingCombo >= 1) {
+                    drawFan(g, px, py, a, r * 0.7f, 60, new Color(255, 255, 255, 60));
+                }
+                // Combo 2: 更大冲击环 + 轻微屏幕震动
+                if (swingCombo >= 2) {
+                    drawFan(g, px, py, a, r * 0.9f, 90, new Color(255, 255, 255, 80));
+                    GameRenderer.addShake(2);
+                }
+            }
         }
 
         // ── E skill FX ──
@@ -723,6 +785,13 @@ public class GameRenderer extends JPanel {
             // Red melee arc
             drawFan(g, ex, ey, a, 50, 80, new Color(255, 60, 40, (int)(80 * fade)));
             drawSlashLine(g, ex, ey, a, 40, new Color(255, 150, 100, (int)(150 * fade)));
+
+            // 敌攻红光粒子：最初 0.05 秒向玩家方向喷射
+            if (e.attackFxTimer > 0.25f) {
+                Vec2 toPlayer = GameManager.instance != null && GameManager.instance.player != null ?
+                    GameManager.instance.player.position.sub(e.position).normalized() : new Vec2(0, -1);
+                GameRenderer.spawnParticlesDirected(ex, ey, 4, new Color(255, 60, 40), 120f, toPlayer);
+            }
         }
 
         // Slow effect indicator (blue tint)
@@ -751,10 +820,10 @@ public class GameRenderer extends JPanel {
             // White flash
             g.setColor(new Color(255, 255, 255, 200));
             g.fillOval(ex - size - 2, ey - size - 2, (size + 2) * 2, (size + 2) * 2);
-            // Impact ring (expanding)
-            float ringR = 20 + (0.12f - e.hitFlashTimer) / 0.12f * 25;
-            g.setColor(new Color(255, 255, 255, (int)(150 * (e.hitFlashTimer / 0.12f))));
-            g.setStroke(new BasicStroke(2));
+            // Impact ring (expanding, thicker and more prominent)
+            float ringR = 10 + (0.1f - e.hitFlashTimer) / 0.1f * 20;
+            g.setColor(new Color(255, 255, 255, (int)(180 * (e.hitFlashTimer / 0.1f))));
+            g.setStroke(new BasicStroke(3));
             g.drawOval(ex - (int)ringR, ey - (int)ringR, (int)ringR * 2, (int)ringR * 2);
             g.setStroke(new BasicStroke(1));
             // Particle burst
