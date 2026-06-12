@@ -372,6 +372,7 @@ public class EnemyBase {
     private void die() {
         if (isDead) return;
         isDead = true;
+        GameRenderer.slowmoTimer = 0.4f;  // 触发慢镜头
         deathTimer = 0.3f;
         // 死亡爆炸粒子 + 震动
         GameRenderer.spawnParticles(position.x, position.y, 25, new Color(255, 180, 50), 140f);

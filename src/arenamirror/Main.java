@@ -88,21 +88,27 @@ public class Main extends JPanel implements KeyListener, MouseListener, MouseMot
     // ══════════════════════════════════════════════
     @Override
     public void actionPerformed(ActionEvent e) {
+        float dt = DT;
+        if (renderer != null && renderer.slowmoTimer > 0) {
+            dt *= 0.3f;
+            renderer.slowmoTimer -= DT;
+            if (renderer.slowmoTimer < 0) renderer.slowmoTimer = 0;
+        }
         if (gm.currentState == GameState.BATTLE && !gm.isPaused) {
             PlayerController pc = PlayerController.instance;
             // Don't process player input/movement while enemy is in death animation
             if (gm.currentEnemy == null || !gm.currentEnemy.isDead) {
                 pc.handleKeyInput(keys, mousePos);
-                pc.update(DT);
+                pc.update(dt);
             } else {
                 pc.velocity = new Vec2(0, 0);
             }
             // Always update enemy (even dead, so deathTimer counts down)
-            if (gm.currentEnemy != null) gm.currentEnemy.update(DT);
+            if (gm.currentEnemy != null) gm.currentEnemy.update(dt);
         } else {
             PlayerController.instance.velocity = new Vec2(0, 0);
         }
-        renderer.frameDT = DT;  // 传递给粒子系统
+        renderer.frameDT = dt;  // 传递给粒子系统
         renderer.repaint();
     }
 

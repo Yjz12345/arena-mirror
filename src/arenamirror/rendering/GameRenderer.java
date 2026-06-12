@@ -15,6 +15,7 @@ import java.util.Random;
 
 public class GameRenderer extends JPanel {
     public static GameRenderer instance;
+    public static float slowmoTimer;  // 慢镜头计时器
 
     private GameManager gm;
 
@@ -1019,6 +1020,15 @@ public class GameRenderer extends JPanel {
         g.setColor(Color.GRAY);
         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
         drawCentered(g, "WASD移动 | 鼠标瞄准 | 左键普攻 | 右键武器技 | Q大招 | E通用技 | 空格冲刺 | ESC暂停", 588);
+
+        // ── 慢镜头"击杀"大字闪烁 ──
+        if (slowmoTimer > 0) {
+            float alpha = Math.min(1f, slowmoTimer / 0.4f);
+            float pulse = 1f + (float)Math.sin(slowmoTimer * 20) * 0.15f;
+            g.setColor(new Color(255, 50, 50, (int)(180 * alpha)));
+            g.setFont(new Font("SansSerif", Font.BOLD, (int)(48 * pulse)));
+            drawCentered(g, "击杀", getHeight() / 2);
+        }
     }
 
     // ══════════════════════════════════════════════
