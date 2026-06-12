@@ -102,6 +102,7 @@ public class Main extends JPanel implements KeyListener, MouseListener, MouseMot
         } else {
             PlayerController.instance.velocity = new Vec2(0, 0);
         }
+        renderer.frameDT = DT;  // 传递给粒子系统
         renderer.repaint();
     }
 

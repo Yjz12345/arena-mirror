@@ -14,7 +14,16 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class GameRenderer extends JPanel {
+    public static GameRenderer instance;
+
     private GameManager gm;
+
+    // ── 粒子系统 ──
+    public List<Particle> particles = new ArrayList<>();
+    public float frameDT = 1f / 60f;
+
+    // ── 屏幕震动 ──
+    float shakeX, shakeY, shakeIntensity;
 
     // Reward sub-state
     public static final int SUB_NONE = 0;
@@ -31,6 +40,12 @@ public class GameRenderer extends JPanel {
     public List<ClickRegion> clickRegions = new ArrayList<>();
     public int upgradeScrollOffset;  // scroll for upgrade list
 
+    // ── 粒子内部类 ──
+    public static class Particle {
+        float x, y, vx, vy, life, maxLife, size;
+        Color color;
+    }
+
     public static class ClickRegion {
         public Rectangle rect;
         public String action;
@@ -39,10 +54,36 @@ public class GameRenderer extends JPanel {
     }
 
     public GameRenderer() {
+        instance = this;
         setPreferredSize(new Dimension(800, 600));
         setBackground(Color.BLACK);
         setDoubleBuffered(true);
         setFocusable(true);
+    }
+
+    // ── 静态辅助方法（供 PlayerController / EnemyBase 调用） ──
+    /** 触发屏幕震动 */
+    public static void addShake(float amount) {
+        if (instance != null) instance.shakeIntensity = Math.max(instance.shakeIntensity, amount);
+    }
+
+    /** 生成粒子爆发 */
+    public static void spawnParticles(float x, float y, int count, Color color, float speed) {
+        if (instance == null) return;
+        Random rng = new Random();
+        for (int i = 0; i < count; i++) {
+            Particle p = new Particle();
+            p.x = x; p.y = y;
+            float angle = rng.nextFloat() * (float)(Math.PI * 2);
+            float spd = speed * (0.5f + rng.nextFloat() * 0.5f);
+            p.vx = (float)Math.cos(angle) * spd;
+            p.vy = (float)Math.sin(angle) * spd;
+            p.life = 0.3f + rng.nextFloat() * 0.4f;
+            p.maxLife = p.life;
+            p.size = 2 + rng.nextFloat() * 3;
+            p.color = color;
+            instance.particles.add(p);
+        }
     }
 
     public void setGameManager(GameManager gm) { this.gm = gm; }
@@ -89,8 +130,15 @@ public class GameRenderer extends JPanel {
         Point mp = getMousePosition();
         boolean hover = mp != null && rect.contains(mp);
 
-        g.setColor(hover ? new Color(80, 80, 120) : new Color(40, 40, 60));
+        // 按钮填充（hover 渐变）
+        if (hover) {
+            GradientPaint btnGp = new GradientPaint(x, y - h + 8, new Color(70, 70, 130), x, y + 8, new Color(40, 40, 80));
+            g.setPaint(btnGp);
+        } else {
+            g.setColor(new Color(40, 40, 60));
+        }
         g.fillRoundRect(x, y - h + 8, w, h, 8, 8);
+        g.setPaint(null);
         g.setColor(hover ? Color.WHITE : Color.LIGHT_GRAY);
         g.drawRoundRect(x, y - h + 8, w, h, 8, 8);
 
@@ -176,6 +224,15 @@ public class GameRenderer extends JPanel {
     //  BATTLE
     // ══════════════════════════════════════════════
     private void drawBattle(Graphics2D g) {
+        // ── 屏幕震动 ──
+        if (shakeIntensity > 0) {
+            shakeX = (float)(Math.random() - 0.5) * shakeIntensity;
+            shakeY = (float)(Math.random() - 0.5) * shakeIntensity;
+            shakeIntensity *= 0.85f;
+            if (shakeIntensity < 0.5f) shakeIntensity = 0;
+            g.translate(shakeX, shakeY);
+        }
+
         // Arena background
         Vec2 center = GameManager.ARENA_CENTER;
         int cx = (int)center.x, cy = (int)center.y;
@@ -261,8 +318,13 @@ public class GameRenderer extends JPanel {
                     case 5:  outer = new Color(120, 255, 50); inner = new Color(80, 200, 30); break;    // poison
                     default: outer = new Color(255, 100, 80); inner = new Color(255, 60, 40); break;    // fire
                 }
+                // 光晕（外层半透明大圈）
+                g.setColor(new Color(outer.getRed(), outer.getGreen(), outer.getBlue(), (int)(60 * fade)));
+                g.fillOval((int)ep.position.x - 8, (int)ep.position.y - 8, 16, 16);
+                // 中间层
                 g.setColor(new Color(outer.getRed(), outer.getGreen(), outer.getBlue(), (int)(180 * fade)));
                 g.fillOval((int)ep.position.x - 5, (int)ep.position.y - 5, 10, 10);
+                // 核心
                 g.setColor(new Color(inner.getRed(), inner.getGreen(), inner.getBlue(), (int)(255 * fade)));
                 g.fillOval((int)ep.position.x - 3, (int)ep.position.y - 3, 6, 6);
             }
@@ -291,6 +353,15 @@ public class GameRenderer extends JPanel {
                 g.fillOval((int)pp.position.x - 3, (int)pp.position.y - 3, 6, 6);
             }
             drawPlayer(g, gm.player);
+        }
+
+        // ── 粒子更新 + 绘制 ──
+        updateAndDrawParticles(g, frameDT);
+
+        // ── 恢复震动偏移 ──
+        if (shakeX != 0 || shakeY != 0) {
+            g.translate(-shakeX, -shakeY);
+            shakeX = 0; shakeY = 0;
         }
 
         // HUD
@@ -334,6 +405,22 @@ public class GameRenderer extends JPanel {
         if (p.isDashing || (p.dashDirection != null)) {
             Vec2 trailDir = p.isDashing && p.dashDirection != null ? p.dashDirection : p.aimDirection;
             boolean fire = p.hasDashEffect("fire_trail");
+
+            // 冲刺尾部粒子（每帧 2-3 个）
+            Color dashParticleColor = fire ? new Color(255, 120, 20) : new Color(100, 200, 255);
+            for (int i = 0; i < 3; i++) {
+                Particle dp = new Particle();
+                dp.x = px + (float)(Math.random() - 0.5) * 12;
+                dp.y = py + (float)(Math.random() - 0.5) * 12;
+                dp.vx = -trailDir.x * (40 + (float)Math.random() * 60);
+                dp.vy = -trailDir.y * (40 + (float)Math.random() * 60);
+                dp.life = 0.2f + (float)Math.random() * 0.25f;
+                dp.maxLife = dp.life;
+                dp.size = 2 + (float)Math.random() * 3;
+                dp.color = dashParticleColor;
+                particles.add(dp);
+            }
+
             // Large fire glow
             if (fire) {
                 g.setColor(new Color(255, 120, 20, 70));
@@ -565,10 +652,18 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body ──
+        // ── Body (径向渐变) ──
         Color bodyColor = p.isInvincible ? new Color(100, 200, 255, 160) : new Color(50, 150, 255);
-        g.setColor(bodyColor);
+        float[] pDist = {0.0f, 0.7f, 1.0f};
+        Color[] pColors = {
+            new Color(180, 220, 255),  // 中心高亮
+            bodyColor,                  // 基色
+            bodyColor.darker().darker() // 边缘暗色
+        };
+        RadialGradientPaint prgp = new RadialGradientPaint(px, py, 13, pDist, pColors);
+        g.setPaint(prgp);
         g.fillOval(px - 11, py - 11, 22, 22);
+        g.setPaint(null);
 
         // ── Enchant glows ──
         for (int i = 0; i < p.enchantSlots; i++) {
@@ -687,10 +782,19 @@ public class GameRenderer extends JPanel {
             g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
         }
 
-        g.setColor(enemyColor);
+        // ── 敌人身体（径向渐变） ──
+        float[] eDist = {0.0f, 0.7f, 1.0f};
+        Color[] eColors = {
+            enemyColor.brighter(),       // 中心高亮
+            enemyColor,                  // 基色
+            enemyColor.darker().darker() // 边缘暗色
+        };
         if (e.source == EnemySource.PAST_LIFE && e.pastLifeId > 0) {
             // Draw patterned circle for past life
+            RadialGradientPaint ergp = new RadialGradientPaint(ex, ey, size, eDist, eColors);
+            g.setPaint(ergp);
             g.fillOval(ex - size, ey - size, size * 2, size * 2);
+            g.setPaint(null);
             // Pattern: number of stripes = (pastLifeId % 5) + 1
             int stripes = (e.pastLifeId % 5) + 1;
             g.setColor(enemyColor.darker());
@@ -701,7 +805,10 @@ public class GameRenderer extends JPanel {
                 g.fillOval(sx - 3, sy - 3, 6, 6);
             }
         } else {
+            RadialGradientPaint ergp = new RadialGradientPaint(ex, ey, size, eDist, eColors);
+            g.setPaint(ergp);
             g.fillOval(ex - size, ey - size, size * 2, size * 2);
+            g.setPaint(null);
         }
         g.setColor(Color.WHITE);
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
@@ -717,15 +824,19 @@ public class GameRenderer extends JPanel {
         FontMetrics fm = g.getFontMetrics();
         g.drawString(label, ex - fm.stringWidth(label) / 2, ey - 18);
 
-        // HP bar
+        // HP bar (渐变)
         float hpPct = Math.max(0, e.currentHp / e.maxHp);
         int bw = 40, bh = 5;
         int bx = ex - bw / 2, by = ey - 26;
         g.setColor(Color.DARK_GRAY);
         g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
-        Color barColor = hpPct > 0.5f ? Color.GREEN : (hpPct > 0.25f ? Color.YELLOW : Color.RED);
-        g.setColor(barColor);
-        g.fillRect(bx, by, (int)(bw * hpPct), bh);
+        int filledW = (int)(bw * hpPct);
+        if (filledW > 0) {
+            GradientPaint hpGp = new GradientPaint(bx, by, new Color(50, 255, 50), bx + filledW, by, new Color(255, 50, 50));
+            g.setPaint(hpGp);
+            g.fillRect(bx, by, filledW, bh);
+            g.setPaint(null);
+        }
     }
 
     /** Generate a unique color from past life ID using golden angle hue spread */
@@ -742,6 +853,31 @@ public class GameRenderer extends JPanel {
         return new Color(Math.min(255, r), Math.min(255, g), Math.min(255, bl));
     }
 
+    /** 更新粒子物理并绘制 */
+    private void updateAndDrawParticles(Graphics2D g, float dt) {
+        for (int i = particles.size() - 1; i >= 0; i--) {
+            Particle p = particles.get(i);
+            // 物理：重力 + 摩擦
+            p.vy += 100 * dt;
+            p.vx *= 0.95f;
+            p.vy *= 0.95f;
+            p.life -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+
+            if (p.life <= 0) {
+                particles.remove(i);
+                continue;
+            }
+
+            // 绘制：大小和透明度随生命衰减
+            float alpha = p.life / p.maxLife;
+            float sz = p.size * alpha;
+            g.setColor(new Color(p.color.getRed(), p.color.getGreen(), p.color.getBlue(), (int)(200 * alpha)));
+            g.fillOval((int)(p.x - sz / 2), (int)(p.y - sz / 2), (int)sz, (int)sz);
+        }
+    }
+
     private void drawBattleHUD(Graphics2D g) {
         PlayerStats stats = PlayerStats.instance;
         PlayerController pc = PlayerController.instance;
@@ -751,13 +887,17 @@ public class GameRenderer extends JPanel {
         g.setColor(new Color(0, 0, 0, 150));
         g.fillRoundRect(x, y, 250, 110, 10, 10);
 
-        // HP bar
+        // HP bar (渐变)
         g.setColor(Color.DARK_GRAY);
         g.fillRect(x + 8, y + 8, 234, 18);
         float hpPct = Math.max(0, stats.currentHp / stats.maxHp);
-        Color hpColor = hpPct > 0.5f ? new Color(50, 200, 50) : (hpPct > 0.25f ? Color.YELLOW : Color.RED);
-        g.setColor(hpColor);
-        g.fillRect(x + 8, y + 8, (int)(234 * hpPct), 18);
+        int hpFilledW = (int)(234 * hpPct);
+        if (hpFilledW > 0) {
+            GradientPaint hpGp = new GradientPaint(x + 8, y + 8, new Color(50, 255, 50), x + 8 + hpFilledW, y + 8, new Color(255, 50, 50));
+            g.setPaint(hpGp);
+            g.fillRect(x + 8, y + 8, hpFilledW, 18);
+            g.setPaint(null);
+        }
         g.setColor(Color.WHITE);
         g.drawRect(x + 8, y + 8, 234, 18);
         g.setFont(new Font("SansSerif", Font.BOLD, 12));

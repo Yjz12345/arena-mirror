@@ -4,6 +4,8 @@ import arenamirror.core.GameManager;
 import arenamirror.core.GameState;
 import arenamirror.data.*;
 import arenamirror.rendering.Vec2;
+import arenamirror.rendering.GameRenderer;
+import java.awt.Color;
 import java.util.*;
 
 public class EnemyBase {
@@ -358,6 +360,8 @@ public class EnemyBase {
         currentHp = Math.max(0, currentHp - reduced);
         lastDamageTaken = reduced;
         hitFlashTimer = 0.1f;
+        // 受击粒子
+        GameRenderer.spawnParticles(position.x, position.y, 8, new Color(255, 255, 100), 70f);
         // Reflect damage (荆棘 passive on past life enemies)
         if (reflectPct > 0 && GameManager.instance != null && GameManager.instance.player != null) {
             GameManager.instance.player.takeDamage(reduced * reflectPct);
@@ -369,6 +373,9 @@ public class EnemyBase {
         if (isDead) return;
         isDead = true;
         deathTimer = 0.3f;
+        // 死亡爆炸粒子 + 震动
+        GameRenderer.spawnParticles(position.x, position.y, 25, new Color(255, 180, 50), 140f);
+        GameRenderer.addShake(8);
     }
 
     public Vec2 directionToPlayer() {

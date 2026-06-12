@@ -4,6 +4,8 @@ import arenamirror.core.GameManager;
 import arenamirror.core.GameState;
 import arenamirror.data.*;
 import arenamirror.rendering.Vec2;
+import arenamirror.rendering.GameRenderer;
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.util.*;
@@ -357,6 +359,7 @@ public class PlayerController {
         if (qUltimate == null || qCooldown > 0) return;
         qCooldown = qUltimate.cooldown;
         qFxTimer = 0.6f;
+        GameRenderer.addShake(4);  // Q 大招屏幕震动
         String name = qUltimate.skillName;
         GameManager gm = GameManager.instance;
 
@@ -468,6 +471,12 @@ public class PlayerController {
         if (isInvincible) return;
         if (shieldTimer > 0) rawDamage *= 0.3f;
         lastDamageTaken = rawDamage; hitFlashTimer = 0.1f;
+
+        // 屏幕震动：受到较大伤害时
+        if (rawDamage > 15) GameRenderer.addShake(6);
+        // 受击粒子
+        GameRenderer.spawnParticles(position.x, position.y, 8, new Color(255, 150, 50), 80f);
+
         PlayerStats.instance.takeDamage(rawDamage);
         // Thorn reflect: when hit, damage nearby enemy
         PlayerSkillHandler h = PlayerSkillHandler.instance;
