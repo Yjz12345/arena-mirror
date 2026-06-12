@@ -158,4 +158,34 @@ public class SpriteGenerator {
         cache.put(key, img);
         return img;
     }
+
+    /** 死亡碎裂帧 — 角色碎成碎片，眼睛变 X_X */
+    public static BufferedImage generateDeathFrame(Color body) {
+        String key = "death_" + body.getRGB();
+        if (cache.containsKey(key)) return cache.get(key);
+
+        BufferedImage img = new BufferedImage(SPRITE_SIZE, SPRITE_SIZE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        Color dark = body.darker().darker();
+        // 碎片
+        Random rng = new Random(42);
+        for (int i = 0; i < 6; i++) {
+            int fx = 8 + rng.nextInt(16) - 8;
+            int fy = 8 + rng.nextInt(16) - 8;
+            g.setColor(i % 2 == 0 ? dark : body);
+            g.fillRect(8 + fx, 8 + fy, 5, 5);
+        }
+        // X_X 眼
+        g.setColor(Color.RED);
+        g.drawLine(7, 5, 13, 9);
+        g.drawLine(13, 5, 7, 9);
+        g.drawLine(17, 5, 23, 9);
+        g.drawLine(23, 5, 17, 9);
+
+        g.dispose();
+        cache.put(key, img);
+        return img;
+    }
 }

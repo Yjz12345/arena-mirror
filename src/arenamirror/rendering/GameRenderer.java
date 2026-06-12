@@ -570,22 +570,32 @@ public class GameRenderer extends JPanel {
         Color bodyColor = p.isInvincible ? new Color(100, 200, 255, 160) : new Color(50, 150, 255);
         Color accentColor = new Color(30, 100, 200);
 
-        BufferedImage sprite;
-        if (p.attackTimer > 0) {
-            // 攻击帧
-            sprite = SpriteGenerator.generateAttackFrame(bodyColor, accentColor, p.swingAngle);
-        } else if (p.velocity.length() > 0.5f) {
-            // 行走帧 - 根据速度方向判断朝向
-            int dir = SpriteGenerator.getDirectionIndex(p.velocity);
-            BufferedImage[] frames = SpriteGenerator.generateWalkFrames(bodyColor, accentColor, dir);
-            int frameIdx = (int)(System.currentTimeMillis() / 150) % 4; // 150ms 每帧
-            sprite = frames[frameIdx];
+        // ── 死亡时使用碎裂帧 ──
+        boolean dead = PlayerStats.instance != null && PlayerStats.instance.currentHp <= 0;
+        if (dead) {
+            BufferedImage deathSprite = SpriteGenerator.generateDeathFrame(bodyColor);
+            g.drawImage(deathSprite, px - 16, py - 16, 32, 32, null);
+            // 半透明红色覆盖
+            g.setColor(new Color(255, 0, 0, 80));
+            g.fillOval(px - 16, py - 16, 32, 32);
         } else {
-            // 闲置帧
-            sprite = SpriteGenerator.generateIdleFrame(bodyColor, accentColor);
+            BufferedImage sprite;
+            if (p.attackTimer > 0) {
+                // 攻击帧
+                sprite = SpriteGenerator.generateAttackFrame(bodyColor, accentColor, p.swingAngle);
+            } else if (p.velocity.length() > 0.5f) {
+                // 行走帧 - 根据速度方向判断朝向
+                int dir = SpriteGenerator.getDirectionIndex(p.velocity);
+                BufferedImage[] frames = SpriteGenerator.generateWalkFrames(bodyColor, accentColor, dir);
+                int frameIdx = (int)(System.currentTimeMillis() / 150) % 4; // 150ms 每帧
+                sprite = frames[frameIdx];
+            } else {
+                // 闲置帧
+                sprite = SpriteGenerator.generateIdleFrame(bodyColor, accentColor);
+            }
+            // 绘制精灵 (居中)
+            g.drawImage(sprite, px - 16, py - 16, 32, 32, null);
         }
-        // 绘制精灵 (居中)
-        g.drawImage(sprite, px - 16, py - 16, 32, 32, null);
 
         // ── Enchant glows ──
         for (int i = 0; i < p.enchantSlots; i++) {
@@ -666,6 +676,11 @@ public class GameRenderer extends JPanel {
 
         // Hit flash overlay
         if (e.hitFlashTimer > 0) {
+            // 强闪白外圈 (最亮的前0.02秒)
+            if (e.hitFlashTimer > 0.08f) {
+                g.setColor(new Color(255, 255, 255, 180));
+                g.fillOval(ex - 18, ey - 18, 36, 36);
+            }
             // White flash
             g.setColor(new Color(255, 255, 255, 200));
             g.fillOval(ex - 14, ey - 14, 28, 28);
