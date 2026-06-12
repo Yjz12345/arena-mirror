@@ -439,6 +439,26 @@ public class PlayerController {
             }
         } else if (name.contains("投射") || name.contains("射击") || name.contains("火")) {
             playerProjectiles.add(new PlayerProjectile(position, dir.scale(speed), dmg, 2f, "fire"));
+        } else if (name.contains("直线弹")) {
+            // Fan of straight non-homing projectiles
+            int count = lvl(eUniversal) >= 2 ? 7 : 5;
+            for (int i = -(count/2); i <= count/2; i++) {
+                float angleOff = i * 0.12f;
+                Vec2 fanDir = new Vec2(
+                    (float)(dir.x * Math.cos(angleOff) - dir.y * Math.sin(angleOff)),
+                    (float)(dir.x * Math.sin(angleOff) + dir.y * Math.cos(angleOff))
+                );
+                playerProjectiles.add(new PlayerProjectile(position, fanDir.scale(speed * 1.5f),
+                    attackDamage * 1.2f + getEnchantDmg(), 1.5f, "straight", false));
+            }
+        } else if (name.contains("激光")) {
+            // Fast piercing laser beam (multiple fast straight projectiles)
+            int count = lvl(eUniversal) >= 2 ? 8 : 5;
+            for (int i = 0; i < count; i++) {
+                Vec2 off = position.add(dir.scale(i * 8));
+                playerProjectiles.add(new PlayerProjectile(off, dir.scale(speed * 2.5f),
+                    attackDamage * 1.8f + getEnchantDmg(), 0.6f, "laser", false));
+            }
         } else {
             playerProjectiles.add(new PlayerProjectile(position, dir.scale(speed), dmg, 2f, "fire"));
         }
@@ -537,11 +557,15 @@ public class PlayerController {
             PlayerProjectile pp = playerProjectiles.get(i);
             pp.update(dt);
             if (gm != null && gm.currentEnemy != null && !gm.currentEnemy.isDead) {
-                Vec2 toEnemy = gm.currentEnemy.position.sub(pp.position);
-                float dist = toEnemy.length();
-                Vec2 targetDir = toEnemy.normalized();
-                pp.velocity = pp.velocity.lerp(targetDir.scale(200f), 0.06f);
-                if (dist < 20f) {
+                if (pp.homing) {
+                    Vec2 toEnemy = gm.currentEnemy.position.sub(pp.position);
+                    float dist = toEnemy.length();
+                    Vec2 targetDir = toEnemy.normalized();
+                    pp.velocity = pp.velocity.lerp(targetDir.scale(200f), 0.06f);
+                } else {
+                    float dist = pp.position.distance(gm.currentEnemy.position);
+                }
+                if (pp.position.distance(gm.currentEnemy.position) < 20f) {
                     gm.currentEnemy.takeDamage(pp.damage);
                     hitFx(pp.damage);
                     if (gm.currentEnemy != null && !gm.currentEnemy.isDead) {

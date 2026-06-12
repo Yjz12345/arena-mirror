@@ -8,7 +8,7 @@ public class PlayerProjectile {
     public float damage;
     public float lifetime;
     public String element; // "fire", "ice", "lightning", etc.
-    public int targetId; // for multi-hit tracking
+    public boolean homing = true; // false for straight/laser projectiles
 
     public PlayerProjectile(Vec2 pos, Vec2 vel, float dmg, float life, String elem) {
         position = new Vec2(pos);
@@ -16,6 +16,11 @@ public class PlayerProjectile {
         damage = dmg;
         lifetime = life;
         element = elem;
+    }
+
+    public PlayerProjectile(Vec2 pos, Vec2 vel, float dmg, float life, String elem, boolean homing) {
+        this(pos, vel, dmg, life, elem);
+        this.homing = homing;
     }
 
     public void update(float dt) {

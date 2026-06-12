@@ -58,6 +58,8 @@ public class SkillManager {
         addE("紧急治疗","回复30%HP",SkillRarity.RARE,15f,2,"mechanism");
         addE("地震打击","范围伤害+缓速",SkillRarity.UNCOMMON,4.5f,3,"numeric");
         addE("吸血打击","伤害+回血50%",SkillRarity.UNCOMMON,4f,3,"numeric");
+        addE("激光束","贯穿激光，非追踪",SkillRarity.RARE,5f,3,"numeric");
+        addE("直线弹幕","扇形直线弹，非追踪",SkillRarity.UNCOMMON,3f,2,"mechanism");
 
         // ── 右键武器技 ──
         addWS("剑刃回旋","圆形范围斩击",SkillRarity.UNCOMMON,3f,3,"numeric");

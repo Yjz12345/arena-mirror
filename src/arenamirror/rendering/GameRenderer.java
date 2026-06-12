@@ -279,6 +279,8 @@ public class GameRenderer extends JPanel {
                     case "ice": orbColor = new Color(80, 180, 255); break;
                     case "lightning": orbColor = new Color(255, 230, 50); break;
                     case "poison": orbColor = new Color(120, 255, 50); break;
+                    case "laser": orbColor = new Color(255, 80, 255); break;
+                    case "straight": orbColor = new Color(220, 220, 255); break;
                     default: orbColor = new Color(255, 200, 80); break;
                 }
                 // Glow

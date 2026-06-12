@@ -28,7 +28,7 @@ public class EnemyAI {
 
         decisionTimer -= dt;
         if (decisionTimer > 0) return;
-        decisionTimer = enemy.source == EnemySource.PAST_LIFE ? 0.12f : decisionInterval;
+        decisionTimer = enemy.source == EnemySource.PAST_LIFE ? 0.2f : decisionInterval;
 
         behavior = enemy.behavior;
         switch (behavior) {
@@ -120,8 +120,8 @@ public class EnemyAI {
 
     private void tryUseRandomSkill() {
         if (enemy.skills == null || enemy.skills.isEmpty()) return;
-        // Normal enemies use skills more often too
-        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.85f : 0.45f;
+        // Past life enemies: moderate skill usage, not overwhelming
+        float chance = enemy.source == EnemySource.PAST_LIFE ? 0.55f : 0.45f;
         if (Math.random() > chance) return;
 
         if (enemy.source == EnemySource.PAST_LIFE) {
