@@ -9,6 +9,7 @@ import arenamirror.traps.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.*;
+import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -565,10 +566,26 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body ──
+        // ── Sprite body (replaces old solid circle) ──
         Color bodyColor = p.isInvincible ? new Color(100, 200, 255, 160) : new Color(50, 150, 255);
-        g.setColor(bodyColor);
-        g.fillOval(px - 11, py - 11, 22, 22);
+        Color accentColor = new Color(30, 100, 200);
+
+        BufferedImage sprite;
+        if (p.attackTimer > 0) {
+            // 攻击帧
+            sprite = SpriteGenerator.generateAttackFrame(bodyColor, accentColor, p.swingAngle);
+        } else if (p.velocity.length() > 0.5f) {
+            // 行走帧 - 根据速度方向判断朝向
+            int dir = SpriteGenerator.getDirectionIndex(p.velocity);
+            BufferedImage[] frames = SpriteGenerator.generateWalkFrames(bodyColor, accentColor, dir);
+            int frameIdx = (int)(System.currentTimeMillis() / 150) % 4; // 150ms 每帧
+            sprite = frames[frameIdx];
+        } else {
+            // 闲置帧
+            sprite = SpriteGenerator.generateIdleFrame(bodyColor, accentColor);
+        }
+        // 绘制精灵 (居中)
+        g.drawImage(sprite, px - 16, py - 16, 32, 32, null);
 
         // ── Enchant glows ──
         for (int i = 0; i < p.enchantSlots; i++) {
@@ -576,7 +593,7 @@ public class GameRenderer extends JPanel {
         }
 
         g.setColor(Color.WHITE);
-        g.drawOval(px - 11, py - 11, 22, 22);
+        g.drawOval(px - 16, py - 16, 32, 32);
 
         // ── Damage taken text ──
         if (p.hitFlashTimer > 0) {
@@ -647,15 +664,11 @@ public class GameRenderer extends JPanel {
             enemyColor = blendColor(enemyColor, new Color(120, 255, 50), 0.4f);
         }
 
-        // Body with pattern based on pastLifeId
-        g.setColor(enemyColor);
-        int size = 13;
-
         // Hit flash overlay
         if (e.hitFlashTimer > 0) {
             // White flash
             g.setColor(new Color(255, 255, 255, 200));
-            g.fillOval(ex - size - 2, ey - size - 2, (size + 2) * 2, (size + 2) * 2);
+            g.fillOval(ex - 14, ey - 14, 28, 28);
             // Impact ring (expanding)
             float ringR = 20 + (0.12f - e.hitFlashTimer) / 0.12f * 25;
             g.setColor(new Color(255, 255, 255, (int)(150 * (e.hitFlashTimer / 0.12f))));
@@ -687,24 +700,13 @@ public class GameRenderer extends JPanel {
             g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
         }
 
-        g.setColor(enemyColor);
-        if (e.source == EnemySource.PAST_LIFE && e.pastLifeId > 0) {
-            // Draw patterned circle for past life
-            g.fillOval(ex - size, ey - size, size * 2, size * 2);
-            // Pattern: number of stripes = (pastLifeId % 5) + 1
-            int stripes = (e.pastLifeId % 5) + 1;
-            g.setColor(enemyColor.darker());
-            for (int i = 0; i < stripes; i++) {
-                double angle = (i * 2 * Math.PI / stripes) - Math.PI / 2;
-                int sx = ex + (int)(Math.cos(angle) * size * 0.6);
-                int sy = ey + (int)(Math.sin(angle) * size * 0.6);
-                g.fillOval(sx - 3, sy - 3, 6, 6);
-            }
-        } else {
-            g.fillOval(ex - size, ey - size, size * 2, size * 2);
-        }
+        // ── 敌人精灵 (替换旧的纯色圆) ──
+        int variant = (e.source == EnemySource.PAST_LIFE) ? e.pastLifeId : e.layerNumber;
+        BufferedImage enemySprite = SpriteGenerator.generateEnemyFrame(enemyColor, variant);
+        g.drawImage(enemySprite, ex - 12, ey - 12, 24, 24, null);
+
         g.setColor(Color.WHITE);
-        g.drawOval(ex - size, ey - size, size * 2, size * 2);
+        g.drawOval(ex - 12, ey - 12, 24, 24);
 
         // Label
         g.setFont(new Font("SansSerif", Font.PLAIN, 9));
