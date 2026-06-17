@@ -189,17 +189,17 @@ public class GameRenderer extends JPanel {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, 800, 600);
 
-        // Grid lines - very dark, barely visible
-        g.setColor(new Color(15, 15, 25));
+        // Grid lines - dark but visible on black
+        g.setColor(new Color(25, 25, 45));
         g.setStroke(new BasicStroke(1));
         for (int i = -r; i <= r; i += 40) {
             g.drawLine(cx + i, cy - r, cx + i, cy + r);
             g.drawLine(cx - r, cy + i, cx + r, cy + i);
         }
 
-        // Border - white thin circle, no fill
-        g.setColor(new Color(60, 60, 80));
-        g.setStroke(new BasicStroke(2));
+        // Border - white neon circle
+        g.setColor(new Color(80, 80, 120));
+        g.setStroke(new BasicStroke(2.5f));
         g.drawOval(cx - r, cy - r, r * 2, r * 2);
         g.setStroke(new BasicStroke(1));
 
@@ -486,16 +486,16 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange;
             float a = p.swingAngle; // snapped on attack start, doesn't jitter
 
-            // Enchant-tinted outer glow arc (thick, semi-transparent)
+            // Enchant-tinted outer glow arc (thick, bright)
             Color arcColor = getEnchantArcColor(p);
             int arcStart = (int)Math.toDegrees(a) - 55;
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(40 * fade)));
-            g.setStroke(new BasicStroke(6));
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(80 * fade)));
+            g.setStroke(new BasicStroke(10));
             g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, arcStart, 110);
 
             // Inner bright arc
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(160 * fade)));
-            g.setStroke(new BasicStroke(2));
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(220 * fade)));
+            g.setStroke(new BasicStroke(3));
             g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, arcStart, 110);
             g.setStroke(new BasicStroke(1));
 
@@ -503,8 +503,8 @@ public class GameRenderer extends JPanel {
             float slashA = a - (float)Math.toRadians(55) + (float)Math.toRadians(110) * progress;
             int sx = px + (int)(Math.cos(slashA) * r * 0.85f);
             int sy = py + (int)(Math.sin(slashA) * r * 0.85f);
-            g.setColor(new Color(255, 255, 255, (int)(200 * fade)));
-            g.setStroke(new BasicStroke(2.5f * fade));
+            g.setColor(new Color(255, 255, 255, (int)(240 * fade)));
+            g.setStroke(new BasicStroke(3.5f * fade));
             g.drawLine(px, py, sx, sy);
             g.setStroke(new BasicStroke(1));
         }
@@ -622,21 +622,21 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body (neon cyan multi-layer outline) ──
-        Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 220) : new Color(0, 255, 255);
+        // ── Body (neon cyan multi-layer outline, highly visible) ──
+        Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 240) : new Color(0, 255, 255);
 
         // Dash boost: thicker outer glow
-        float glowThickness = p.isDashing ? 12f : 8f;
-        Color glowColor = p.isInvincible ? new Color(255, 255, 255, 60) : new Color(0, 255, 255, 60);
+        float glowThickness = p.isDashing ? 14f : 10f;
+        Color glowColor = p.isInvincible ? new Color(255, 255, 255, 80) : new Color(0, 255, 255, 100);
 
-        // Outer glow (thick + semi-transparent)
+        // Outer glow (thick + bright)
         g.setColor(glowColor);
         g.setStroke(new BasicStroke(glowThickness));
         g.drawOval(px - 11, py - 11, 22, 22);
 
         // Inner bright line
         g.setColor(bodyColor);
-        g.setStroke(new BasicStroke(2));
+        g.setStroke(new BasicStroke(3));
         g.drawOval(px - 11, py - 11, 22, 22);
 
         g.setStroke(new BasicStroke(1));
@@ -653,26 +653,44 @@ public class GameRenderer extends JPanel {
             g.drawString(String.format("-%.0f", p.lastDamageTaken), px - 10, py - 25 - (int)((1 - p.hitFlashTimer / 0.1f) * 12));
         }
 
-        // ── Aim line ──
-        int ax = px + (int)(p.aimDirection.x * 20);
-        int ay = py + (int)(p.aimDirection.y * 20);
-        g.setColor(new Color(0, 255, 255, 150));
-        g.setStroke(new BasicStroke(2));
+        // ── Aim line (bright neon) ──
+        int ax = px + (int)(p.aimDirection.x * 24);
+        int ay = py + (int)(p.aimDirection.y * 24);
+        g.setColor(new Color(0, 255, 255, 60));
+        g.setStroke(new BasicStroke(4));
+        g.drawLine(px, py, ax, ay);
+        g.setColor(new Color(0, 255, 255, 220));
+        g.setStroke(new BasicStroke(1.5f));
         g.drawLine(px, py, ax, ay);
         g.setStroke(new BasicStroke(1));
 
-        // ── Range ring (subtle neon) ──
-        g.setColor(new Color(0, 255, 255, 20));
+        // ── Range ring (bright neon, always visible) ──
+        g.setColor(new Color(0, 255, 255, 100));
+        g.setStroke(new BasicStroke(1.5f));
         int ar = (int)p.attackRange;
         g.drawOval(px - ar, py - ar, ar * 2, ar * 2);
+        // Extra glow dots at cardinal points
+        g.setColor(new Color(0, 255, 255, 180));
+        g.fillOval(px + ar - 2, py - 2, 4, 4);
+        g.fillOval(px - ar - 2, py - 2, 4, 4);
+        g.fillOval(px - 2, py + ar - 2, 4, 4);
+        g.fillOval(px - 2, py - ar - 2, 4, 4);
+        g.setStroke(new BasicStroke(1));
 
-        // ── Dash charge dots (neon cyan) ──
+        // ── Dash charge dots (neon cyan, empty outlines for unused) ──
         for (int i = 0; i < p.maxDashCharges; i++) {
             float a = (float)(i * 2 * Math.PI / Math.max(1, p.maxDashCharges) - Math.PI / 2);
             int dx = px + (int)(Math.cos(a) * 18);
             int dy = py + (int)(Math.sin(a) * 18);
-            g.setColor(i < p.currentDashCharges ? new Color(0, 255, 255) : new Color(30, 30, 50));
-            g.fillOval(dx - 3, dy - 3, 6, 6);
+            if (i < p.currentDashCharges) {
+                g.setColor(new Color(0, 255, 255));
+                g.fillOval(dx - 3, dy - 3, 6, 6);
+            } else {
+                g.setColor(new Color(0, 255, 255, 100));
+                g.setStroke(new BasicStroke(1.5f));
+                g.drawOval(dx - 3, dy - 3, 6, 6);
+                g.setStroke(new BasicStroke(1));
+            }
         }
     }
 
@@ -721,16 +739,19 @@ public class GameRenderer extends JPanel {
 
         int size = 13;
 
-        // Hit flash overlay (thick white outline)
+        // Hit flash overlay (bright fill + outline)
         if (e.hitFlashTimer > 0) {
-            // White thick flash ring
+            // Bright white fill flash (like original, for visibility)
+            g.setColor(new Color(255, 255, 255, (int)(180 * (e.hitFlashTimer / 0.12f))));
+            g.fillOval(ex - size - 2, ey - size - 2, (size + 2) * 2, (size + 2) * 2);
+            // Thick outline flash ring
+            g.setColor(new Color(255, 255, 255, (int)(255 * (e.hitFlashTimer / 0.12f))));
+            g.setStroke(new BasicStroke(5));
+            g.drawOval(ex - size - 4, ey - size - 4, (size + 4) * 2, (size + 4) * 2);
+            // Impact ring (expanding, thicker)
+            float ringR = 15 + (0.12f - e.hitFlashTimer) / 0.12f * 35;
             g.setColor(new Color(255, 255, 255, (int)(200 * (e.hitFlashTimer / 0.12f))));
-            g.setStroke(new BasicStroke(4));
-            g.drawOval(ex - size - 3, ey - size - 3, (size + 3) * 2, (size + 3) * 2);
-            // Impact ring (expanding)
-            float ringR = 20 + (0.12f - e.hitFlashTimer) / 0.12f * 25;
-            g.setColor(new Color(255, 255, 255, (int)(150 * (e.hitFlashTimer / 0.12f))));
-            g.setStroke(new BasicStroke(2));
+            g.setStroke(new BasicStroke(3));
             g.drawOval(ex - (int)ringR, ey - (int)ringR, (int)ringR * 2, (int)ringR * 2);
             g.setStroke(new BasicStroke(1));
             // Particle burst
@@ -759,14 +780,14 @@ public class GameRenderer extends JPanel {
         }
 
         // ── Enemy body: multi-layer neon outline ──
-        // Outer glow (thick + semi-transparent)
-        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), 60));
-        g.setStroke(new BasicStroke(6));
+        // Outer glow (thick + bright)
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), 100));
+        g.setStroke(new BasicStroke(8));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
         // Inner bright line
         g.setColor(enemyColor);
-        g.setStroke(new BasicStroke(2));
+        g.setStroke(new BasicStroke(3));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
         // Past life pattern: small dots along the ring
