@@ -1,7 +1,6 @@
 # Java build output
 build/
 *.class
-*.jar
 
 # IDE files
 .idea/
