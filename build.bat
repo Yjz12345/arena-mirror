@@ -10,4 +10,4 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 echo Build OK! Running...
-"C:\Program Files\Common Files\Oracle\Java\javapath\java.exe" -cp build arenamirror.Main
+"C:\Program Files\Java\jdk-21\bin\java.exe" -cp build arenamirror.Main
