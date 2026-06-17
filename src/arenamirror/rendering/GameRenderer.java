@@ -197,9 +197,9 @@ public class GameRenderer extends JPanel {
             g.drawLine(cx - r, cy + i, cx + r, cy + i);
         }
 
-        // Border - white neon circle with glow
-        g.setColor(new Color(40, 40, 60, 40));
-        g.setStroke(new BasicStroke(6));
+        // Border - neon glow ring
+        g.setColor(new Color(40, 40, 60, 30));
+        g.setStroke(new BasicStroke(4));
         g.drawOval(cx - r, cy - r, r * 2, r * 2);
         g.setColor(new Color(80, 80, 140));
         g.setStroke(new BasicStroke(2.5f));
@@ -729,26 +729,25 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body (neon cyan triple-layer bloom outline) ──
+        // ── Body (neon cyan triple-layer, optimized) ──
         Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 255) : new Color(0, 255, 255);
 
-        // Dash boost: even thicker outer glow
-        float glowThickness = p.isDashing ? 18f : 14f;
-        Color glowColor = p.isInvincible ? new Color(255, 255, 255, 50) : new Color(0, 255, 255, 70);
+        float gThick = p.isDashing ? 14f : 9f;
+        Color gColor = p.isInvincible ? new Color(255, 255, 255, 40) : new Color(0, 255, 255, 60);
 
-        // Bloom layer (very thick, very faint)
-        g.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), 20));
-        g.setStroke(new BasicStroke(glowThickness + 6));
+        // Bloom layer (thin, very faint — perf friendly)
+        g.setColor(new Color(gColor.getRed(), gColor.getGreen(), gColor.getBlue(), 15));
+        g.setStroke(new BasicStroke(gThick + 3));
         g.drawOval(px - 11, py - 11, 22, 22);
 
-        // Outer glow (thick + bright)
-        g.setColor(glowColor);
-        g.setStroke(new BasicStroke(glowThickness));
+        // Outer glow
+        g.setColor(gColor);
+        g.setStroke(new BasicStroke(gThick));
         g.drawOval(px - 11, py - 11, 22, 22);
 
         // Inner bright line
         g.setColor(bodyColor);
-        g.setStroke(new BasicStroke(3));
+        g.setStroke(new BasicStroke(2.5f));
         g.drawOval(px - 11, py - 11, 22, 22);
 
         g.setStroke(new BasicStroke(1));
@@ -893,23 +892,22 @@ public class GameRenderer extends JPanel {
             g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
         }
 
-        // ── Enemy body: triple-layer neon bloom outline ──
-        // Dead enemies fade out
+        // ── Enemy body: triple-layer neon bloom (optimized) ──
         float deadFade = e.isDead ? Math.max(0, e.deathTimer / 0.3f) : 1f;
 
-        // Bloom layer (very thick, very faint)
-        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(25 * deadFade)));
-        g.setStroke(new BasicStroke(14 * deadFade));
+        // Bloom layer (thin, very faint)
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(15 * deadFade)));
+        g.setStroke(new BasicStroke(10 * deadFade));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
         
-        // Outer glow (thick + bright, fades when dead)
-        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(100 * deadFade)));
-        g.setStroke(new BasicStroke(8 * deadFade));
+        // Outer glow
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(80 * deadFade)));
+        g.setStroke(new BasicStroke(6 * deadFade));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
         // Inner bright line
         g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(255 * deadFade)));
-        g.setStroke(new BasicStroke(3 * deadFade));
+        g.setStroke(new BasicStroke(2.5f * deadFade));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
         // Past life pattern: small dots along the ring

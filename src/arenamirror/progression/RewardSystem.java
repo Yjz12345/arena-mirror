@@ -73,8 +73,8 @@ public class RewardSystem {
     }
 
     public List<SkillData> drawSkills() {
-        if (currentSkillDraw == null)
-            currentSkillDraw = SkillManager.instance.drawSkills(3);
+        // Always fresh draw, no caching across rounds
+        currentSkillDraw = SkillManager.instance.drawSkills(3);
         return currentSkillDraw;
     }
 

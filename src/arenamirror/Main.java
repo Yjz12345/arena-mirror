@@ -156,6 +156,9 @@ public class Main extends JPanel implements KeyListener, MouseListener, MouseMot
     public void keyTyped(KeyEvent e) {}
 
     private void startGame() {
+        renderer.rewardSubState = GameRenderer.SUB_NONE;
+        renderer.drawnSkills = null;
+        renderer.upgradeScrollOffset = 0;
         gm.startNewRun();
     }
 
