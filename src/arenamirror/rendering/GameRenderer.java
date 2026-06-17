@@ -197,8 +197,11 @@ public class GameRenderer extends JPanel {
             g.drawLine(cx - r, cy + i, cx + r, cy + i);
         }
 
-        // Border - white neon circle
-        g.setColor(new Color(80, 80, 120));
+        // Border - white neon circle with glow
+        g.setColor(new Color(40, 40, 60, 40));
+        g.setStroke(new BasicStroke(6));
+        g.drawOval(cx - r, cy - r, r * 2, r * 2);
+        g.setColor(new Color(80, 80, 140));
         g.setStroke(new BasicStroke(2.5f));
         g.drawOval(cx - r, cy - r, r * 2, r * 2);
         g.setStroke(new BasicStroke(1));
@@ -418,56 +421,56 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange * 1.5f;
 
             if ("剑刃回旋".equals(n)) {
-                // Full circle AoE - filled inner + multi-layer outlines
-                g.setColor(new Color(50, 255, 150, (int)(20 * fade)));
+                // Full circle AoE - faint fill + multi-layer glow
+                g.setColor(new Color(50, 255, 150, (int)(10 * fade)));
                 g.fillOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
-                g.setColor(new Color(100, 255, 200, (int)(60 * fade)));
-                g.setStroke(new BasicStroke(8));
+                g.setColor(new Color(100, 255, 200, (int)(40 * fade)));
+                g.setStroke(new BasicStroke(10));
                 g.drawOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
                 g.setColor(new Color(50, 255, 150, (int)(220 * fade)));
                 g.setStroke(new BasicStroke(3));
                 g.drawOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
                 g.setStroke(new BasicStroke(1));
             } else if ("蓄力突刺".equals(n)) {
-                // Filled narrow wedge + thick outline + stab line
+                // Filled narrow wedge (faint) + thick outline + stab line
                 float coneR = r * 1.8f;
-                g.setColor(new Color(255, 150, 50, (int)(30 * fade)));
+                g.setColor(new Color(255, 150, 50, (int)(15 * fade)));
                 fillFanPolygon(g, px, py, a, coneR, 40);
-                g.setColor(new Color(255, 180, 60, (int)(120 * fade)));
-                g.setStroke(new BasicStroke(6));
+                g.setColor(new Color(255, 180, 60, (int)(80 * fade)));
+                g.setStroke(new BasicStroke(8));
                 int as = -(int)Math.toDegrees(a) - 20;
                 g.drawArc(px - (int)coneR, py - (int)coneR, (int)coneR * 2, (int)coneR * 2, as, 40);
                 // Stab line - thick glowing
                 int lx = px + (int)(Math.cos(a) * coneR);
                 int ly = py + (int)(Math.sin(a) * coneR);
-                g.setColor(new Color(255, 200, 80, (int)(80 * fade)));
-                g.setStroke(new BasicStroke(8 * fade));
+                g.setColor(new Color(255, 200, 80, (int)(50 * fade)));
+                g.setStroke(new BasicStroke(10 * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setColor(new Color(255, 255, 200, (int)(240 * fade)));
-                g.setStroke(new BasicStroke(3 * fade));
+                g.setStroke(new BasicStroke(3.5f * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setStroke(new BasicStroke(1));
             } else if ("冲锋".equals(n)) {
-                // Thick dash line + wide cone
+                // Thick dash line + faint wide cone
                 int lx = px + (int)(Math.cos(a) * r * 2.5f);
                 int ly = py + (int)(Math.sin(a) * r * 2.5f);
-                g.setColor(new Color(255, 255, 100, (int)(40 * fade)));
+                g.setColor(new Color(255, 255, 100, (int)(15 * fade)));
                 fillFanPolygon(g, px, py, a, r * 1.4f, 160);
-                g.setColor(new Color(255, 255, 100, (int)(100 * fade)));
-                g.setStroke(new BasicStroke(10f * fade));
+                g.setColor(new Color(255, 255, 100, (int)(60 * fade)));
+                g.setStroke(new BasicStroke(12f * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setColor(new Color(255, 255, 200, (int)(200 * fade)));
-                g.setStroke(new BasicStroke(3f * fade));
+                g.setStroke(new BasicStroke(3.5f * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setStroke(new BasicStroke(1));
             } else if ("地震打击".equals(n)) {
-                // Expanding circle - thick filled + multi-layer rings
+                // Expanding circle - faint fill + thick multi-layer rings
                 float expand = 1f - fade;
                 int er = (int)(r * 0.8f + expand * r);
-                g.setColor(new Color(180, 140, 50, (int)(25 * fade)));
+                g.setColor(new Color(180, 140, 50, (int)(12 * fade)));
                 g.fillOval(px - er, py - er, er * 2, er * 2);
-                g.setColor(new Color(180, 140, 50, (int)(80 * fade)));
-                g.setStroke(new BasicStroke(6));
+                g.setColor(new Color(180, 140, 50, (int)(50 * fade)));
+                g.setStroke(new BasicStroke(8));
                 g.drawOval(px - er, py - er, er * 2, er * 2);
                 g.setColor(new Color(220, 180, 80, (int)(200 * fade)));
                 g.setStroke(new BasicStroke(3));
@@ -491,11 +494,11 @@ public class GameRenderer extends JPanel {
                     g.setStroke(new BasicStroke(1));
                 }
             } else if ("吸血打击".equals(n)) {
-                // Red wide cone + healing rings
-                g.setColor(new Color(220, 40, 40, (int)(25 * fade)));
+                // Red wide cone + healing rings (neon glow)
+                g.setColor(new Color(220, 40, 40, (int)(12 * fade)));
                 fillFanPolygon(g, px, py, a, r * 1.4f, 70);
-                g.setColor(new Color(255, 60, 40, (int)(120 * fade)));
-                g.setStroke(new BasicStroke(5));
+                g.setColor(new Color(255, 60, 40, (int)(80 * fade)));
+                g.setStroke(new BasicStroke(7));
                 int as = -(int)Math.toDegrees(a) - 35;
                 g.drawArc(px - (int)(r*1.4f), py - (int)(r*1.4f), (int)(r*2.8f), (int)(r*2.8f), as, 70);
                 g.setColor(new Color(255, 120, 80, (int)(180 * fade)));
@@ -510,11 +513,11 @@ public class GameRenderer extends JPanel {
                 g.drawOval(px - 20, py - 20, 40, 40);
                 g.setStroke(new BasicStroke(1));
             } else {
-                // Default: 重斩 - filled wide cone + thick slash
-                g.setColor(new Color(100, 200, 255, (int)(25 * fade)));
+                // Default: 重斩 - faint filled wide cone + thick glow slash
+                g.setColor(new Color(100, 200, 255, (int)(12 * fade)));
                 fillFanPolygon(g, px, py, a, r, 140);
-                g.setColor(new Color(100, 200, 255, (int)(100 * fade)));
-                g.setStroke(new BasicStroke(6));
+                g.setColor(new Color(100, 200, 255, (int)(60 * fade)));
+                g.setStroke(new BasicStroke(8));
                 int as = -(int)Math.toDegrees(a) - 70;
                 g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, as, 140);
                 g.setColor(new Color(180, 240, 255, (int)(200 * fade)));
@@ -538,9 +541,9 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange;
             float a = p.swingAngle; // snapped on attack start, doesn't jitter
 
-            // Enchant-tinted filled wedge (translucent, shows attack area)
+            // Enchant-tinted filled wedge (very faint, neon style)
             Color arcColor = getEnchantArcColor(p);
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(25 * fade)));
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(12 * fade)));
             int npts = 9;
             int[] xp = new int[npts + 1];
             int[] yp = new int[npts + 1];
@@ -688,12 +691,17 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body (neon cyan multi-layer outline, highly visible) ──
-        Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 240) : new Color(0, 255, 255);
+        // ── Body (neon cyan triple-layer bloom outline) ──
+        Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 255) : new Color(0, 255, 255);
 
-        // Dash boost: thicker outer glow
-        float glowThickness = p.isDashing ? 14f : 10f;
-        Color glowColor = p.isInvincible ? new Color(255, 255, 255, 80) : new Color(0, 255, 255, 100);
+        // Dash boost: even thicker outer glow
+        float glowThickness = p.isDashing ? 18f : 14f;
+        Color glowColor = p.isInvincible ? new Color(255, 255, 255, 50) : new Color(0, 255, 255, 70);
+
+        // Bloom layer (very thick, very faint)
+        g.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), glowColor.getBlue(), 20));
+        g.setStroke(new BasicStroke(glowThickness + 6));
+        g.drawOval(px - 11, py - 11, 22, 22);
 
         // Outer glow (thick + bright)
         g.setColor(glowColor);
@@ -847,9 +855,14 @@ public class GameRenderer extends JPanel {
             g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
         }
 
-        // ── Enemy body: multi-layer neon outline ──
+        // ── Enemy body: triple-layer neon bloom outline ──
         // Dead enemies fade out
         float deadFade = e.isDead ? Math.max(0, e.deathTimer / 0.3f) : 1f;
+
+        // Bloom layer (very thick, very faint)
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(25 * deadFade)));
+        g.setStroke(new BasicStroke(14 * deadFade));
+        g.drawOval(ex - size, ey - size, size * 2, size * 2);
         
         // Outer glow (thick + bright, fades when dead)
         g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(100 * deadFade)));
