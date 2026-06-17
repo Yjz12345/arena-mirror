@@ -8,7 +8,6 @@ import arenamirror.progression.*;
 import arenamirror.traps.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -331,12 +330,6 @@ public class GameRenderer extends JPanel {
 
         // HUD
         drawBattleHUD(g);
-    }
-
-    private void drawTriangle(Graphics2D g, int cx, int cy, int s) {
-        int[] xs = {cx, cx - s, cx + s};
-        int[] ys = {cy - s, cy + s, cy + s};
-        g.drawPolygon(xs, ys, 3);
     }
 
     private void drawPlayer(Graphics2D g, PlayerController p) {
@@ -1289,11 +1282,6 @@ public class GameRenderer extends JPanel {
         g.setStroke(new BasicStroke(1.5f));
         g.drawArc(cx - (int)radius, cy - (int)radius, (int)radius * 2, (int)radius * 2, arcStart, degrees);
         g.setStroke(new BasicStroke(1));
-    }
-
-    // Keep drawFan for backward compatibility (used by existing code) - redirect to outline
-    private void drawFan(Graphics2D g, int cx, int cy, float angle, float radius, int degrees, Color color) {
-        drawFanOutline(g, cx, cy, angle, radius, degrees, color);
     }
 
     /** Filled translucent fan polygon for neon style (math angle, Y-up) */

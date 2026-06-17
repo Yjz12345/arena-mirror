@@ -52,7 +52,6 @@ public class EnemyBase {
     // hit effects
     public float hitFlashTimer;
     public float lastDamageTaken;
-    public float hitStopTimer;
     public float burnFlashTimer;   // burn tick damage number display
 
     // attack FX

@@ -5,7 +5,6 @@ import arenamirror.player.*;
 import arenamirror.enemies.*;
 import arenamirror.data.*;
 import arenamirror.skills.*;
-import arenamirror.weapons.*;
 import arenamirror.progression.*;
 import arenamirror.traps.*;
 import arenamirror.rendering.*;
@@ -37,11 +36,9 @@ public class Main extends JPanel implements KeyListener, MouseListener, MouseMot
         new PlayerController();
         new PlayerSkillHandler();
         new SkillManager();
-        new WeaponManager();
         new MetaProgression();
         new RewardSystem();
         new TrapManager();
-        new SaveSystem();
         new PastLifeLog();
 
         gm = new GameManager();

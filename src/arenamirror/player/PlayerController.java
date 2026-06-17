@@ -51,7 +51,6 @@ public class PlayerController {
     // hit effects
     public float hitFlashTimer;
     public float lastDamageTaken;
-    public float hitStopTimer;
 
     // continuous AoE
     public float whirlTimer;
@@ -69,7 +68,6 @@ public class PlayerController {
     public String[] enchantElements = new String[3];
     public float[] enchantDamages = new float[3];
     public int enchantSlots = 1;
-    public boolean dualEnchantUnlocked;
 
     // ── Q, E, right-click slots ──
     public SkillData qUltimate;
