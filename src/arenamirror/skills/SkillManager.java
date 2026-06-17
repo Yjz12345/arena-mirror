@@ -78,15 +78,17 @@ public class SkillManager {
 
     public List<SkillData> drawSkills(int count) {
         PlayerSkillHandler handler = PlayerSkillHandler.instance;
-        PlayerStats stats = PlayerStats.instance;
         List<SkillData> available = new ArrayList<>();
         for (SkillData skill : globalSkillPool) {
             if (skill.category == SkillCategory.WEAPON_EXCLUSIVE) continue;
-            SkillInstance inst = handler != null ? handler.getSkillInstance(skill) : null;
-            // Stat modifier passives: never re-draw if already owned (upgrade via 升级)
-            if (inst != null && skill.category == SkillCategory.STAT_MODIFIER) continue;
-            // Skip active/slot skills already owned (must replace to reacquire)
-            if (inst != null && skill.category != SkillCategory.STAT_MODIFIER) continue;
+            // Check if already owned by exact name match (more robust than getSkillInstance)
+            boolean owned = false;
+            if (handler != null) {
+                for (SkillInstance si : handler.allSkills) {
+                    if (si.data.skillName.equals(skill.skillName)) { owned = true; break; }
+                }
+            }
+            if (owned) continue;
             available.add(skill);
         }
         return weightedRandomSelect(available, count);

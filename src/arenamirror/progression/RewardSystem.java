@@ -27,8 +27,6 @@ public class RewardSystem {
 
     public void initForLayer() {
         rerollsRemaining = 1 + (PlayerStats.instance != null ? PlayerStats.instance.metaRerollCount : 0);
-        // [TEST] 无限重roll
-        rerollsRemaining = 999;
     }
 
     public void applyHeal() {
