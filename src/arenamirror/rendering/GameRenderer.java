@@ -543,9 +543,9 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange;
             float a = p.swingAngle; // snapped on attack start, doesn't jitter
 
-            // Enchant-tinted filled wedge (very faint, neon style)
+            // Faint filled wedge (shows attack area)
             Color arcColor = getEnchantArcColor(p);
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(12 * fade)));
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(15 * fade)));
             int npts = 9;
             int[] xp = new int[npts + 1];
             int[] yp = new int[npts + 1];
@@ -558,24 +558,19 @@ public class GameRenderer extends JPanel {
             }
             g.fillPolygon(xp, yp, npts + 1);
 
-            // Outer glow arc on the edge (Java2D angle = -math angle)
+            // Bright thin arc on the edge
             int java2dArcStart = -(int)Math.toDegrees(a) - 55;
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(100 * fade)));
-            g.setStroke(new BasicStroke(8));
-            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, java2dArcStart, 110);
-
-            // Inner bright arc
             g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(220 * fade)));
             g.setStroke(new BasicStroke(2.5f));
             g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, java2dArcStart, 110);
             g.setStroke(new BasicStroke(1));
 
-            // Slash line sweeps within the arc (stable, based on progress not live angle)
+            // Slash line
             float slashA = a - (float)Math.toRadians(55) + (float)Math.toRadians(110) * progress;
             int sx = px + (int)(Math.cos(slashA) * r * 0.85f);
             int sy = py + (int)(Math.sin(slashA) * r * 0.85f);
             g.setColor(new Color(255, 255, 255, (int)(240 * fade)));
-            g.setStroke(new BasicStroke(3.5f * fade));
+            g.setStroke(new BasicStroke(2.5f * fade));
             g.drawLine(px, py, sx, sy);
             g.setStroke(new BasicStroke(1));
         }
@@ -719,21 +714,19 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body (two-layer neon outline, perf optimized) ──
+        // ── Body (fill-glow + thin outline — fast!) ──
         Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 255) : new Color(0, 255, 255);
-        float gThick = p.isDashing ? 12f : 8f;
-        Color gColor = p.isInvincible ? new Color(255, 255, 255, 50) : new Color(0, 255, 255, 80);
+        Color glowFill = p.isInvincible ? new Color(255, 255, 255, 30) : new Color(0, 255, 255, 40);
+        int glowR = p.isDashing ? 16 : 13;
 
-        // Outer glow
-        g.setColor(gColor);
-        g.setStroke(new BasicStroke(gThick));
-        g.drawOval(px - 11, py - 11, 22, 22);
+        // Soft fill glow (cheap fillOval, no stroke computation)
+        g.setColor(glowFill);
+        g.fillOval(px - glowR, py - glowR, glowR * 2, glowR * 2);
 
-        // Inner bright line
+        // Thin bright outline
         g.setColor(bodyColor);
         g.setStroke(new BasicStroke(2.5f));
         g.drawOval(px - 11, py - 11, 22, 22);
-
         g.setStroke(new BasicStroke(1));
 
         // ── Enchant glows (small colored outline rings) ──
@@ -876,18 +869,18 @@ public class GameRenderer extends JPanel {
             g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
         }
 
-        // ── Enemy body: two-layer neon outline (perf optimized) ──
+        // ── Enemy body: fill-glow + thin outline (fast!) ──
         float deadFade = e.isDead ? Math.max(0, e.deathTimer / 0.3f) : 1f;
 
-        // Outer glow
-        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(80 * deadFade)));
-        g.setStroke(new BasicStroke(6 * deadFade));
-        g.drawOval(ex - size, ey - size, size * 2, size * 2);
+        // Soft fill glow
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(35 * deadFade)));
+        g.fillOval(ex - size - 4, ey - size - 4, (size + 4) * 2, (size + 4) * 2);
 
-        // Inner bright line
+        // Thin bright outline
         g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(255 * deadFade)));
         g.setStroke(new BasicStroke(2.5f * deadFade));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
+        g.setStroke(new BasicStroke(1));
 
         // Past life pattern: small dots along the ring
         if (e.source == EnemySource.PAST_LIFE && e.pastLifeId > 0) {
