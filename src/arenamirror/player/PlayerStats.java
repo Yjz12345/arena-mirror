@@ -132,7 +132,7 @@ public class PlayerStats {
     }
 
     private CharacterData createDefaultCharacter() {
-        CharacterData c = new CharacterData("战士", 100f, 10f, 4.8f);
+        CharacterData c = new CharacterData("战士", 100f, 10f, 6.2f);
         c.description = "初始角色，均衡属性";
         c.qUltimate = new SkillData("战吼", "怒吼提升攻击力50%，持续3秒", SkillRarity.UNCOMMON, true, SkillCategory.Q_ULTIMATE);
         c.qUltimate.cooldown = 12f;
@@ -142,7 +142,7 @@ public class PlayerStats {
     }
 
     private WeaponData createDefaultWeapon() {
-        WeaponData w = new WeaponData("短剑", WeaponType.SWORD, AttackPattern.MELEE_SLASH, 6f, 4.0f, 70f);
+        WeaponData w = new WeaponData("短剑", WeaponType.SWORD, AttackPattern.MELEE_SLASH, 6f, 5.0f, 70f);
         w.rightClickSpecial = new SkillData("重斩", "蓄力重击，造成2倍伤害", SkillRarity.COMMON, true, SkillCategory.WEAPON_SPECIAL);
         w.rightClickSpecial.cooldown = 3f;
         w.specialCooldown = 3f;
