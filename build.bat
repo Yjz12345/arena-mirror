@@ -9,5 +9,5 @@ if %ERRORLEVEL% NEQ 0 (
     pause
     exit /b 1
 )
-echo Build OK! Running...
-start java -cp build arenamirror.Main
+echo Build OK! Running with OpenGL...
+start java -Dsun.java2d.opengl=true -cp build arenamirror.Main
