@@ -486,17 +486,30 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange;
             float a = p.swingAngle; // snapped on attack start, doesn't jitter
 
-            // Enchant-tinted outer glow arc (thick, bright)
+            // Enchant-tinted filled wedge (translucent, shows attack area)
             Color arcColor = getEnchantArcColor(p);
-            int arcStart = (int)Math.toDegrees(a) - 55;
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(80 * fade)));
-            g.setStroke(new BasicStroke(10));
-            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, arcStart, 110);
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(25 * fade)));
+            int npts = 9;
+            int[] xp = new int[npts + 1];
+            int[] yp = new int[npts + 1];
+            xp[0] = px; yp[0] = py;
+            for (int i = 0; i < npts; i++) {
+                float t = (float)i / (npts - 1);
+                float aa = a - (float)Math.toRadians(55) + (float)Math.toRadians(110) * t;
+                xp[i + 1] = px + (int)(Math.cos(aa) * r);
+                yp[i + 1] = py + (int)(Math.sin(aa) * r);
+            }
+            g.fillPolygon(xp, yp, npts + 1);
+
+            // Outer glow arc on the edge
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(100 * fade)));
+            g.setStroke(new BasicStroke(8));
+            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, (int)Math.toDegrees(a) - 55, 110);
 
             // Inner bright arc
             g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(220 * fade)));
-            g.setStroke(new BasicStroke(3));
-            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, arcStart, 110);
+            g.setStroke(new BasicStroke(2.5f));
+            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, (int)Math.toDegrees(a) - 55, 110);
             g.setStroke(new BasicStroke(1));
 
             // Slash line sweeps within the arc (stable, based on progress not live angle)
@@ -697,8 +710,8 @@ public class GameRenderer extends JPanel {
     private void drawEnemy(Graphics2D g, EnemyBase e) {
         int ex = (int)e.position.x, ey = (int)e.position.y;
 
-        // Telegraph growing circle (neon outline)
-        if (e.isTelegraphing) {
+        // Telegraph growing circle (neon outline) — only if alive
+        if (!e.isDead && e.isTelegraphing) {
             float progress = 1f - (e.telegraphTimer / (e.queuedSkill != null ? e.queuedSkill.telegraphDuration : 0.5f));
             int tr = (int)(20 + progress * 35);
             g.setColor(new Color(255, 0, 255, (int)(30 + progress * 80)));
@@ -710,8 +723,8 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Enemy attack FX: melee arc outline ──
-        if (e.attackFxTimer > 0) {
+        // ── Enemy attack FX: melee arc outline — only if alive ──
+        if (!e.isDead && e.attackFxTimer > 0) {
             float fade = e.attackFxTimer / 0.3f;
             float a = (float)Math.atan2(e.lastAttackDir.y, e.lastAttackDir.x);
             // Red melee outline arc
@@ -726,7 +739,8 @@ public class GameRenderer extends JPanel {
         } else {
             enemyColor = new Color(255, 0, 255);   // neon magenta
         }
-        // Status tint adjustments (dimmer for outline style)
+        // Status tint adjustments (only when alive)
+        if (!e.isDead) {
         if (e.slowTimer > 0) {
             enemyColor = blendColor(enemyColor, new Color(0, 200, 255), 0.3f);
         }
@@ -736,11 +750,12 @@ public class GameRenderer extends JPanel {
         if (e.poisonStacks > 0) {
             enemyColor = blendColor(enemyColor, new Color(0, 255, 100), 0.3f);
         }
+        } // end if (!e.isDead)
 
         int size = 13;
 
-        // Hit flash overlay (bright fill + outline)
-        if (e.hitFlashTimer > 0) {
+        // Hit flash overlay (bright fill + outline) — only if alive
+        if (!e.isDead && e.hitFlashTimer > 0) {
             // Bright white fill flash (like original, for visibility)
             g.setColor(new Color(255, 255, 255, (int)(180 * (e.hitFlashTimer / 0.12f))));
             g.fillOval(ex - size - 2, ey - size - 2, (size + 2) * 2, (size + 2) * 2);
@@ -780,14 +795,17 @@ public class GameRenderer extends JPanel {
         }
 
         // ── Enemy body: multi-layer neon outline ──
-        // Outer glow (thick + bright)
-        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), 100));
-        g.setStroke(new BasicStroke(8));
+        // Dead enemies fade out
+        float deadFade = e.isDead ? Math.max(0, e.deathTimer / 0.3f) : 1f;
+        
+        // Outer glow (thick + bright, fades when dead)
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(100 * deadFade)));
+        g.setStroke(new BasicStroke(8 * deadFade));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
         // Inner bright line
-        g.setColor(enemyColor);
-        g.setStroke(new BasicStroke(3));
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), (int)(255 * deadFade)));
+        g.setStroke(new BasicStroke(3 * deadFade));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
         // Past life pattern: small dots along the ring
@@ -804,11 +822,14 @@ public class GameRenderer extends JPanel {
 
         g.setStroke(new BasicStroke(1));
 
-        // Label (neon color)
+        // Label (neon color, fades when dead)
         g.setFont(new Font("SansSerif", Font.PLAIN, 9));
         String label;
         Color labelColor;
-        if (e.source == EnemySource.PAST_LIFE) {
+        if (e.isDead) {
+            label = "击杀";
+            labelColor = new Color(255, 255, 255, (int)(200 * deadFade));
+        } else if (e.source == EnemySource.PAST_LIFE) {
             label = "前世#" + e.pastLifeId;
             labelColor = new Color(255, 215, 0);
         } else {
