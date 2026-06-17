@@ -418,64 +418,116 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange * 1.5f;
 
             if ("剑刃回旋".equals(n)) {
-                // Full circle AoE - multi-layer outlines
-                g.setColor(new Color(100, 255, 200, (int)(30 * fade)));
-                g.setStroke(new BasicStroke(6));
+                // Full circle AoE - filled inner + multi-layer outlines
+                g.setColor(new Color(50, 255, 150, (int)(20 * fade)));
+                g.fillOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
+                g.setColor(new Color(100, 255, 200, (int)(60 * fade)));
+                g.setStroke(new BasicStroke(8));
                 g.drawOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
-                g.setColor(new Color(50, 255, 150, (int)(180 * fade)));
-                g.setStroke(new BasicStroke(2));
+                g.setColor(new Color(50, 255, 150, (int)(220 * fade)));
+                g.setStroke(new BasicStroke(3));
                 g.drawOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
                 g.setStroke(new BasicStroke(1));
             } else if ("蓄力突刺".equals(n)) {
-                // Long narrow cone forward - outline fan
-                drawFanOutline(g, px, py, a, r * 1.6f, 40, new Color(255, 150, 50, (int)(100 * fade)));
-                // Stab line
-                int lx = px + (int)(Math.cos(a) * r * 1.6f);
-                int ly = py + (int)(Math.sin(a) * r * 1.6f);
-                g.setColor(new Color(255, 255, 255, (int)(220 * fade)));
-                g.setStroke(new BasicStroke(3f * fade));
+                // Filled narrow wedge + thick outline + stab line
+                float coneR = r * 1.8f;
+                g.setColor(new Color(255, 150, 50, (int)(30 * fade)));
+                fillFanPolygon(g, px, py, a, coneR, 40);
+                g.setColor(new Color(255, 180, 60, (int)(120 * fade)));
+                g.setStroke(new BasicStroke(6));
+                int as = -(int)Math.toDegrees(a) - 20;
+                g.drawArc(px - (int)coneR, py - (int)coneR, (int)coneR * 2, (int)coneR * 2, as, 40);
+                // Stab line - thick glowing
+                int lx = px + (int)(Math.cos(a) * coneR);
+                int ly = py + (int)(Math.sin(a) * coneR);
+                g.setColor(new Color(255, 200, 80, (int)(80 * fade)));
+                g.setStroke(new BasicStroke(8 * fade));
+                g.drawLine(px, py, lx, ly);
+                g.setColor(new Color(255, 255, 200, (int)(240 * fade)));
+                g.setStroke(new BasicStroke(3 * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setStroke(new BasicStroke(1));
             } else if ("冲锋".equals(n)) {
-                // Dash trail forward
-                int lx = px + (int)(Math.cos(a) * r * 2f);
-                int ly = py + (int)(Math.sin(a) * r * 2f);
-                g.setColor(new Color(255, 255, 100, (int)(80 * fade)));
-                g.setStroke(new BasicStroke(6f * fade));
+                // Thick dash line + wide cone
+                int lx = px + (int)(Math.cos(a) * r * 2.5f);
+                int ly = py + (int)(Math.sin(a) * r * 2.5f);
+                g.setColor(new Color(255, 255, 100, (int)(40 * fade)));
+                fillFanPolygon(g, px, py, a, r * 1.4f, 160);
+                g.setColor(new Color(255, 255, 100, (int)(100 * fade)));
+                g.setStroke(new BasicStroke(10f * fade));
+                g.drawLine(px, py, lx, ly);
+                g.setColor(new Color(255, 255, 200, (int)(200 * fade)));
+                g.setStroke(new BasicStroke(3f * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setStroke(new BasicStroke(1));
-                // Wide cone behind - outline
-                drawFanOutline(g, px, py, a, r, 140, new Color(255, 255, 100, (int)(80 * fade)));
             } else if ("地震打击".equals(n)) {
-                // Expanding circle - multi-layer rings
+                // Expanding circle - thick filled + multi-layer rings
                 float expand = 1f - fade;
                 int er = (int)(r * 0.8f + expand * r);
-                g.setColor(new Color(180, 140, 50, (int)(50 * fade)));
-                g.setStroke(new BasicStroke(4));
+                g.setColor(new Color(180, 140, 50, (int)(25 * fade)));
+                g.fillOval(px - er, py - er, er * 2, er * 2);
+                g.setColor(new Color(180, 140, 50, (int)(80 * fade)));
+                g.setStroke(new BasicStroke(6));
                 g.drawOval(px - er, py - er, er * 2, er * 2);
-                g.setColor(new Color(200, 160, 60, (int)(180 * fade)));
-                g.setStroke(new BasicStroke(2));
+                g.setColor(new Color(220, 180, 80, (int)(200 * fade)));
+                g.setStroke(new BasicStroke(3));
                 g.drawOval(px - er, py - er, er * 2, er * 2);
                 g.setStroke(new BasicStroke(1));
             } else if ("连斩".equals(n)) {
                 int count = PlayerSkillHandler.instance.getSkillLevel(p.rightClickSpecial) >= 2 ? 5 : 3;
                 for (int i = 0; i < count; i++) {
-                    float offset = (i - (count-1)/2f) * 0.25f;
+                    float offset = (i - (count-1)/2f) * 0.3f;
                     float sa = a + offset;
-                    drawSlashLine(g, px, py, sa, r * 0.9f, new Color(255, 255, 255, (int)(180 * fade)));
+                    // Thick glow slash
+                    g.setColor(new Color(255, 255, 255, (int)(50 * fade)));
+                    g.setStroke(new BasicStroke(6 * fade));
+                    int sx = px + (int)(Math.cos(sa) * r);
+                    int sy = py + (int)(Math.sin(sa) * r);
+                    g.drawLine(px, py, sx, sy);
+                    // Bright core
+                    g.setColor(new Color(255, 255, 255, (int)(220 * fade)));
+                    g.setStroke(new BasicStroke(2 * fade));
+                    g.drawLine(px, py, sx, sy);
+                    g.setStroke(new BasicStroke(1));
                 }
             } else if ("吸血打击".equals(n)) {
-                // Red narrow cone + healing ring
-                drawFanOutline(g, px, py, a, r * 1.3f, 60, new Color(220, 40, 40, (int)(150 * fade)));
-                g.setColor(new Color(255, 100, 100, (int)(120 * fade)));
-                g.setStroke(new BasicStroke(3));
-                g.drawOval(px - 18, py - 18, 36, 36);
+                // Red wide cone + healing rings
+                g.setColor(new Color(220, 40, 40, (int)(25 * fade)));
+                fillFanPolygon(g, px, py, a, r * 1.4f, 70);
+                g.setColor(new Color(255, 60, 40, (int)(120 * fade)));
+                g.setStroke(new BasicStroke(5));
+                int as = -(int)Math.toDegrees(a) - 35;
+                g.drawArc(px - (int)(r*1.4f), py - (int)(r*1.4f), (int)(r*2.8f), (int)(r*2.8f), as, 70);
+                g.setColor(new Color(255, 120, 80, (int)(180 * fade)));
+                g.setStroke(new BasicStroke(2));
+                g.drawArc(px - (int)(r*1.4f), py - (int)(r*1.4f), (int)(r*2.8f), (int)(r*2.8f), as, 70);
+                // Healing ring
+                g.setColor(new Color(255, 100, 100, (int)(80 * fade)));
+                g.setStroke(new BasicStroke(5));
+                g.drawOval(px - 20, py - 20, 40, 40);
+                g.setColor(new Color(255, 180, 180, (int)(200 * fade)));
+                g.setStroke(new BasicStroke(2));
+                g.drawOval(px - 20, py - 20, 40, 40);
                 g.setStroke(new BasicStroke(1));
             } else {
-                // Default: 重斩 - wide outline cone + slash
-                drawFanOutline(g, px, py, a, r, 140, new Color(100, 200, 255, (int)(150 * fade)));
+                // Default: 重斩 - filled wide cone + thick slash
+                g.setColor(new Color(100, 200, 255, (int)(25 * fade)));
+                fillFanPolygon(g, px, py, a, r, 140);
+                g.setColor(new Color(100, 200, 255, (int)(100 * fade)));
+                g.setStroke(new BasicStroke(6));
+                int as = -(int)Math.toDegrees(a) - 70;
+                g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, as, 140);
+                g.setColor(new Color(180, 240, 255, (int)(200 * fade)));
+                g.setStroke(new BasicStroke(2.5f));
+                g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, as, 140);
                 float slashA = a - (float)Math.toRadians(70) + (float)Math.toRadians(140) * (1f - fade);
-                drawSlashLine(g, px, py, slashA, r * 0.9f, new Color(255, 255, 255, (int)(220 * fade)));
+                g.setColor(new Color(255, 255, 255, (int)(60 * fade)));
+                g.setStroke(new BasicStroke(5));
+                g.drawLine(px, py, px + (int)(Math.cos(slashA) * r * 0.9f), py + (int)(Math.sin(slashA) * r * 0.9f));
+                g.setColor(new Color(255, 255, 255, (int)(240 * fade)));
+                g.setStroke(new BasicStroke(2));
+                g.drawLine(px, py, px + (int)(Math.cos(slashA) * r * 0.9f), py + (int)(Math.sin(slashA) * r * 0.9f));
+                g.setStroke(new BasicStroke(1));
             }
         }
 
@@ -1193,6 +1245,21 @@ public class GameRenderer extends JPanel {
     // Keep drawFan for backward compatibility (used by existing code) - redirect to outline
     private void drawFan(Graphics2D g, int cx, int cy, float angle, float radius, int degrees, Color color) {
         drawFanOutline(g, cx, cy, angle, radius, degrees, color);
+    }
+
+    /** Filled translucent fan polygon for neon style (math angle, Y-up) */
+    private void fillFanPolygon(Graphics2D g, int cx, int cy, float angle, float radius, int degrees) {
+        int n = 9;
+        int[] xp = new int[n + 1];
+        int[] yp = new int[n + 1];
+        xp[0] = cx; yp[0] = cy;
+        for (int i = 0; i < n; i++) {
+            float t = (float)i / (n - 1);
+            float aa = angle - (float)Math.toRadians(degrees / 2f) + (float)Math.toRadians(degrees) * t;
+            xp[i + 1] = cx + (int)(Math.cos(aa) * radius);
+            yp[i + 1] = cy + (int)(Math.sin(aa) * radius);
+        }
+        g.fillPolygon(xp, yp, n + 1);
     }
 
     private void drawSlashLine(Graphics2D g, int cx, int cy, float angle, float length, Color color) {
