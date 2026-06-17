@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 echo === 角斗场：百层之镜 [Neon] ===
 echo Compiling...
 if not exist build mkdir build
@@ -9,4 +10,4 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 echo Build OK! Running...
-start javaw -cp build arenamirror.Main
+start java -cp build arenamirror.Main
