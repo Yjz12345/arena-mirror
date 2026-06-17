@@ -501,15 +501,16 @@ public class GameRenderer extends JPanel {
             }
             g.fillPolygon(xp, yp, npts + 1);
 
-            // Outer glow arc on the edge
+            // Outer glow arc on the edge (Java2D angle = -math angle)
+            int java2dArcStart = -(int)Math.toDegrees(a) - 55;
             g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(100 * fade)));
             g.setStroke(new BasicStroke(8));
-            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, (int)Math.toDegrees(a) - 55, 110);
+            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, java2dArcStart, 110);
 
             // Inner bright arc
             g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(220 * fade)));
             g.setStroke(new BasicStroke(2.5f));
-            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, (int)Math.toDegrees(a) - 55, 110);
+            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, java2dArcStart, 110);
             g.setStroke(new BasicStroke(1));
 
             // Slash line sweeps within the arc (stable, based on progress not live angle)
@@ -1176,10 +1177,11 @@ public class GameRenderer extends JPanel {
     }
 
     private void drawFanOutline(Graphics2D g, int cx, int cy, float angle, float radius, int degrees, Color color) {
+        // Convert math angle to Java2D screen angle (negate)
+        int arcStart = -(int)Math.toDegrees(angle) - degrees / 2;
         // Outer glow arc
         g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha() / 3));
         g.setStroke(new BasicStroke(4));
-        int arcStart = (int)Math.toDegrees(angle) - degrees / 2;
         g.drawArc(cx - (int)radius, cy - (int)radius, (int)radius * 2, (int)radius * 2, arcStart, degrees);
         // Inner bright arc
         g.setColor(color);
