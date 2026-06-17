@@ -89,11 +89,15 @@ public class GameRenderer extends JPanel {
         Point mp = getMousePosition();
         boolean hover = mp != null && rect.contains(mp);
 
-        g.setColor(hover ? new Color(80, 80, 120) : new Color(40, 40, 60));
+        // Neon button: dark fill + cyan outline
+        g.setColor(hover ? new Color(0, 30, 50) : new Color(10, 10, 25));
         g.fillRoundRect(x, y - h + 8, w, h, 8, 8);
-        g.setColor(hover ? Color.WHITE : Color.LIGHT_GRAY);
+        g.setColor(hover ? new Color(0, 255, 255, 200) : new Color(0, 255, 255, 80));
+        g.setStroke(new BasicStroke(1.5f));
         g.drawRoundRect(x, y - h + 8, w, h, 8, 8);
+        g.setStroke(new BasicStroke(1));
 
+        g.setColor(hover ? new Color(0, 255, 255) : new Color(0, 200, 200));
         int tx = x + (w - fm.stringWidth(text)) / 2;
         int ty = y + 4;
         g.drawString(text, tx, ty);
@@ -103,13 +107,13 @@ public class GameRenderer extends JPanel {
     }
 
     private void drawTitle(Graphics2D g, String text, int y, int size) {
-        g.setColor(Color.WHITE);
+        g.setColor(new Color(0, 255, 255));
         g.setFont(new Font("SansSerif", Font.BOLD, size));
         drawCentered(g, text, y);
     }
 
     private void drawText(Graphics2D g, String text, int y, int size) {
-        g.setColor(Color.LIGHT_GRAY);
+        g.setColor(new Color(0, 200, 200, 180));
         g.setFont(new Font("SansSerif", Font.PLAIN, size));
         drawCentered(g, text, y);
     }
@@ -141,7 +145,7 @@ public class GameRenderer extends JPanel {
 
         if (slot != null) {
             String enemyType = slot.enemySource == EnemySource.PAST_LIFE ? "前世敌人" : "预设敌人";
-            g.setColor(slot.enemySource == EnemySource.PAST_LIFE ? new Color(200, 100, 255) : new Color(255, 150, 50));
+            g.setColor(slot.enemySource == EnemySource.PAST_LIFE ? new Color(255, 215, 0) : new Color(255, 0, 255));
             drawCentered(g, "敌人类型：" + enemyType, 120, 16);
 
             if (slot.enemySource == EnemySource.PAST_LIFE && slot.pastLifeRecord != null) {
@@ -157,7 +161,7 @@ public class GameRenderer extends JPanel {
             int y = 195;
             if (slot.originalSkills != null && !slot.originalSkills.isEmpty()) {
                 for (SkillData skill : slot.originalSkills) {
-                    Color c = skill.hasTelegraph ? Color.ORANGE : Color.LIGHT_GRAY;
+                    Color c = skill.hasTelegraph ? new Color(255, 150, 50) : new Color(0, 200, 200, 150);
                     g.setColor(c);
                     drawCentered(g, "  " + (skill.hasTelegraph ? "⚠ " : "· ") + skill.skillName
                         + (skill.hasTelegraph ? " (预兆" + String.format("%.1f", skill.telegraphDuration) + "秒)" : ""), y);
@@ -181,24 +185,25 @@ public class GameRenderer extends JPanel {
         int cx = (int)center.x, cy = (int)center.y;
         int r = (int)GameManager.ARENA_RADIUS;
 
-        // Floor
-        g.setColor(new Color(25, 25, 35));
-        g.fillOval(cx - r, cy - r, r * 2, r * 2);
+        // Floor - pure black rect (neon style)
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, 800, 600);
 
-        // Grid lines
-        g.setColor(new Color(35, 35, 50));
+        // Grid lines - very dark, barely visible
+        g.setColor(new Color(15, 15, 25));
+        g.setStroke(new BasicStroke(1));
         for (int i = -r; i <= r; i += 40) {
             g.drawLine(cx + i, cy - r, cx + i, cy + r);
             g.drawLine(cx - r, cy + i, cx + r, cy + i);
         }
 
-        // Border
-        g.setColor(new Color(80, 80, 100));
-        g.setStroke(new BasicStroke(3));
+        // Border - white thin circle, no fill
+        g.setColor(new Color(60, 60, 80));
+        g.setStroke(new BasicStroke(2));
         g.drawOval(cx - r, cy - r, r * 2, r * 2);
         g.setStroke(new BasicStroke(1));
 
-        // Traps
+        // Traps (neon outline style)
         TrapManager tm = TrapManager.instance;
         if (tm != null && tm.activeTraps != null) {
             for (TrapSpawnEntry trap : tm.activeTraps) {
@@ -206,22 +211,38 @@ public class GameRenderer extends JPanel {
                 int ty = cy + (int)trap.position.y;
                 switch (trap.trapType) {
                     case SPIKE:
-                        g.setColor(trap.isObstacle ? Color.DARK_GRAY : new Color(180, 50, 50));
-                        drawTriangle(g, tx, ty, 8);
+                        // Neon red outline triangle
+                        g.setColor(new Color(255, 60, 60, 180));
+                        g.setStroke(new BasicStroke(1.5f));
+                        drawTriangleOutline(g, tx, ty, 8);
+                        g.setStroke(new BasicStroke(1));
                         break;
                     case FIRE:
-                        g.setColor(new Color(255, 120, 20, 200));
-                        g.fillOval(tx - 8, ty - 8, 16, 16);
+                        // Glow + bright ring
+                        g.setColor(new Color(255, 80, 255, 50));
+                        g.fillOval(tx - 10, ty - 10, 20, 20);
+                        g.setColor(new Color(255, 80, 255, 200));
+                        g.setStroke(new BasicStroke(1.5f));
+                        g.drawOval(tx - 8, ty - 8, 16, 16);
+                        g.setStroke(new BasicStroke(1));
                         break;
                     case MOVING_SAW:
-                        g.setColor(Color.GRAY);
-                        g.fillOval(tx - 10, ty - 10, 20, 20);
-                        g.setColor(Color.DARK_GRAY);
+                        // Glow ring
+                        g.setColor(new Color(255, 0, 255, 40));
+                        g.fillOval(tx - 12, ty - 12, 24, 24);
+                        g.setColor(new Color(200, 200, 200, 200));
+                        g.setStroke(new BasicStroke(2));
                         g.drawOval(tx - 10, ty - 10, 20, 20);
+                        g.setStroke(new BasicStroke(1));
                         break;
                     case PIT:
-                        g.setColor(new Color(10, 10, 20));
+                        // Dark void with purple ring
+                        g.setColor(new Color(5, 0, 15));
                         g.fillOval(tx - 12, ty - 12, 24, 24);
+                        g.setColor(new Color(100, 0, 200, 150));
+                        g.setStroke(new BasicStroke(2));
+                        g.drawOval(tx - 12, ty - 12, 24, 24);
+                        g.setStroke(new BasicStroke(1));
                         break;
                 }
             }
@@ -249,46 +270,58 @@ public class GameRenderer extends JPanel {
 
         // Enemy
         if (gm.currentEnemy != null) {
-            // Draw enemy projectiles (with lifetime, dodgeable)
+            // Draw enemy projectiles (neon outline dots)
             for (EnemyProjectile ep : gm.currentEnemy.activeProjectiles) {
                 float fade = Math.min(1f, ep.lifetime / 0.5f);
-                Color outer, inner;
+                Color neonColor;
                 switch (ep.colorType) {
-                    case 1:  outer = new Color(100, 180, 255); inner = new Color(60, 140, 255); break;  // ice
-                    case 2:  outer = new Color(255, 230, 50); inner = new Color(255, 200, 30); break;   // lightning
-                    case 3:  outer = new Color(255, 100, 255); inner = new Color(255, 50, 255); break;  // laser
-                    case 4:  outer = new Color(200, 200, 200); inner = new Color(255, 255, 255); break; // straight
-                    case 5:  outer = new Color(120, 255, 50); inner = new Color(80, 200, 30); break;    // poison
-                    default: outer = new Color(255, 100, 80); inner = new Color(255, 60, 40); break;    // fire
+                    case 1:  neonColor = new Color(0, 200, 255); break;     // ice: cyan
+                    case 2:  neonColor = new Color(255, 230, 50); break;    // lightning: gold
+                    case 3:  neonColor = new Color(255, 0, 255); break;     // laser: magenta
+                    case 4:  neonColor = new Color(255, 255, 200); break;   // straight: bright
+                    case 5:  neonColor = new Color(0, 255, 100); break;     // poison: green
+                    default: neonColor = new Color(255, 80, 255); break;    // fire: magenta-orange
                 }
-                g.setColor(new Color(outer.getRed(), outer.getGreen(), outer.getBlue(), (int)(180 * fade)));
-                g.fillOval((int)ep.position.x - 5, (int)ep.position.y - 5, 10, 10);
-                g.setColor(new Color(inner.getRed(), inner.getGreen(), inner.getBlue(), (int)(255 * fade)));
-                g.fillOval((int)ep.position.x - 3, (int)ep.position.y - 3, 6, 6);
+                // Outer glow
+                g.setColor(new Color(neonColor.getRed(), neonColor.getGreen(), neonColor.getBlue(), (int)(40 * fade)));
+                g.fillOval((int)ep.position.x - 7, (int)ep.position.y - 7, 14, 14);
+                // Inner bright ring
+                g.setColor(new Color(neonColor.getRed(), neonColor.getGreen(), neonColor.getBlue(), (int)(200 * fade)));
+                g.setStroke(new BasicStroke(1.5f));
+                g.drawOval((int)ep.position.x - 5, (int)ep.position.y - 5, 10, 10);
+                g.setStroke(new BasicStroke(1));
+                // Core dot
+                g.setColor(new Color(255, 255, 255, (int)(200 * fade)));
+                g.fillOval((int)ep.position.x - 2, (int)ep.position.y - 2, 4, 4);
             }
             drawEnemy(g, gm.currentEnemy);
         }
 
         // Player (on top)
         if (gm.player != null) {
-            // Draw player projectiles (glowing orbs)
+            // Draw player projectiles (neon glow + bright core)
             for (PlayerProjectile pp : gm.player.playerProjectiles) {
-                Color orbColor;
+                Color neonColor;
                 switch (pp.element != null ? pp.element : "") {
-                    case "fire": orbColor = new Color(255, 150, 30); break;
-                    case "ice": orbColor = new Color(80, 180, 255); break;
-                    case "lightning": orbColor = new Color(255, 230, 50); break;
-                    case "poison": orbColor = new Color(120, 255, 50); break;
-                    case "laser": orbColor = new Color(255, 80, 255); break;
-                    case "straight": orbColor = new Color(220, 220, 255); break;
-                    default: orbColor = new Color(255, 200, 80); break;
+                    case "fire":     neonColor = new Color(255, 80, 255); break;    // magenta-orange
+                    case "ice":      neonColor = new Color(0, 200, 255); break;     // cyan
+                    case "lightning": neonColor = new Color(255, 230, 50); break;   // gold
+                    case "poison":   neonColor = new Color(0, 255, 100); break;     // green
+                    case "laser":    neonColor = new Color(255, 0, 255); break;     // magenta
+                    case "straight": neonColor = new Color(255, 255, 200); break;   // bright white
+                    default:         neonColor = new Color(255, 255, 200); break;
                 }
-                // Glow
-                g.setColor(new Color(orbColor.getRed(), orbColor.getGreen(), orbColor.getBlue(), 60));
-                g.fillOval((int)pp.position.x - 6, (int)pp.position.y - 6, 12, 12);
-                // Core
-                g.setColor(orbColor);
-                g.fillOval((int)pp.position.x - 3, (int)pp.position.y - 3, 6, 6);
+                // Outer glow halo
+                g.setColor(new Color(neonColor.getRed(), neonColor.getGreen(), neonColor.getBlue(), 40));
+                g.fillOval((int)pp.position.x - 8, (int)pp.position.y - 8, 16, 16);
+                // Bright ring
+                g.setColor(new Color(neonColor.getRed(), neonColor.getGreen(), neonColor.getBlue(), 180));
+                g.setStroke(new BasicStroke(1.5f));
+                g.drawOval((int)pp.position.x - 5, (int)pp.position.y - 5, 10, 10);
+                g.setStroke(new BasicStroke(1));
+                // Core bright dot
+                g.setColor(new Color(255, 255, 200));
+                g.fillOval((int)pp.position.x - 2, (int)pp.position.y - 2, 4, 4);
             }
             drawPlayer(g, gm.player);
         }
@@ -300,7 +333,7 @@ public class GameRenderer extends JPanel {
     private void drawTriangle(Graphics2D g, int cx, int cy, int s) {
         int[] xs = {cx, cx - s, cx + s};
         int[] ys = {cy - s, cy + s, cy + s};
-        g.fillPolygon(xs, ys, 3);
+        g.drawPolygon(xs, ys, 3);
     }
 
     private void drawPlayer(Graphics2D g, PlayerController p) {
@@ -321,33 +354,44 @@ public class GameRenderer extends JPanel {
         if (p.qBuffTimer > 0) {
             float pulse = (float)(0.5 + 0.5 * Math.sin(p.qBuffTimer * 10));
             g.setColor(new Color(255, 200, 50, (int)(60 + pulse * 60)));
-            g.fillOval(px - 18, py - 18, 36, 36);
+            g.setStroke(new BasicStroke(3 + pulse * 2));
+            g.drawOval(px - 16, py - 16, 32, 32);
+            g.setStroke(new BasicStroke(1));
         }
 
         // ── Hit flash ──
         if (p.hitFlashTimer > 0) {
-            g.setColor(new Color(255, 50, 50, 140));
-            g.fillOval(px - 16, py - 16, 32, 32);
+            g.setColor(new Color(255, 50, 50, 180));
+            g.setStroke(new BasicStroke(3));
+            g.drawOval(px - 14, py - 14, 28, 28);
+            g.setStroke(new BasicStroke(1));
         }
 
-        // ── Dash trail ──
+        // ── Dash trail (neon outline style) ──
         if (p.isDashing || (p.dashDirection != null)) {
             Vec2 trailDir = p.isDashing && p.dashDirection != null ? p.dashDirection : p.aimDirection;
             boolean fire = p.hasDashEffect("fire_trail");
-            // Large fire glow
+            Color trailColor = fire ? new Color(255, 80, 255) : new Color(0, 255, 255);
+
+            // Large glow ring
             if (fire) {
-                g.setColor(new Color(255, 120, 20, 70));
-                g.fillOval(px - 20, py - 20, 40, 40);
+                g.setColor(new Color(255, 80, 255, 40));
+                g.setStroke(new BasicStroke(8));
+                g.drawOval(px - 16, py - 16, 32, 32);
+                g.setStroke(new BasicStroke(1));
             }
+            // Trail segments as thick outline lines
             for (int i = 1; i <= 5; i++) {
                 float trailX = px - trailDir.x * i * 8;
                 float trailY = py - trailDir.y * i * 8;
-                int alpha = (int)(fire ? 100 : 80) - i * 15;
-                int r = fire ? 255 : 0, gn = fire ? 140 : 200, b = fire ? 20 : 255;
-                g.setColor(new Color(r, gn, b, Math.max(10, alpha)));
-                g.fillOval((int)trailX - 6, (int)trailY - 6, 12, 12);
+                int alpha = fire ? 100 : 80 - i * 15;
+                g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), Math.max(10, alpha)));
+                g.setStroke(new BasicStroke(4 - i * 0.5f));
+                g.drawOval((int)trailX - 5, (int)trailY - 5, 10, 10);
+                g.setStroke(new BasicStroke(1));
             }
-            g.setColor(new Color(fire ? 255 : 100, fire ? 200 : 255, fire ? 50 : 255, fire ? 150 : 100));
+            // Front dash line
+            g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), fire ? 180 : 150));
             g.setStroke(new BasicStroke(fire ? 5f : 3f));
             int lx = px + (int)(trailDir.x * (fire ? 16 : 10));
             int ly = py + (int)(trailDir.y * (fire ? 16 : 10));
@@ -355,13 +399,14 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Shield ──
+        // ── Shield (neon outline) ──
         if (p.shieldTimer > 0) {
-            g.setColor(new Color(200, 200, 255, 100));
-            g.fillOval(px - 16, py - 16, 32, 32);
+            g.setColor(new Color(200, 200, 255, 60));
+            g.setStroke(new BasicStroke(4));
+            g.drawOval(px - 15, py - 15, 30, 30);
             g.setColor(new Color(150, 150, 255, 200));
             g.setStroke(new BasicStroke(2));
-            g.drawOval(px - 16, py - 16, 32, 32);
+            g.drawOval(px - 15, py - 15, 30, 30);
             g.setStroke(new BasicStroke(1));
         }
 
@@ -373,26 +418,17 @@ public class GameRenderer extends JPanel {
             float r = p.attackRange * 1.5f;
 
             if ("剑刃回旋".equals(n)) {
-                // Full circle AoE
-                g.setColor(new Color(100, 255, 200, (int)(70 * fade)));
-                g.fillOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
+                // Full circle AoE - multi-layer outlines
+                g.setColor(new Color(100, 255, 200, (int)(30 * fade)));
+                g.setStroke(new BasicStroke(6));
+                g.drawOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
                 g.setColor(new Color(50, 255, 150, (int)(180 * fade)));
                 g.setStroke(new BasicStroke(2));
                 g.drawOval(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2);
                 g.setStroke(new BasicStroke(1));
             } else if ("蓄力突刺".equals(n)) {
-                // Long narrow cone forward
-                int n2 = 7;
-                int[] xp2 = new int[n2 + 2]; int[] yp2 = new int[n2 + 2];
-                xp2[0] = px; yp2[0] = py;
-                for (int i = 0; i <= n2; i++) {
-                    float t = (float)i / n2;
-                    float aa = a - (float)Math.toRadians(20) + (float)Math.toRadians(40) * t;
-                    xp2[i + 1] = px + (int)(Math.cos(aa) * r * 1.6f);
-                    yp2[i + 1] = py + (int)(Math.sin(aa) * r * 1.6f);
-                }
-                g.setColor(new Color(255, 150, 50, (int)(100 * fade)));
-                g.fillPolygon(xp2, yp2, n2 + 2);
+                // Long narrow cone forward - outline fan
+                drawFanOutline(g, px, py, a, r * 1.6f, 40, new Color(255, 150, 50, (int)(100 * fade)));
                 // Stab line
                 int lx = px + (int)(Math.cos(a) * r * 1.6f);
                 int ly = py + (int)(Math.sin(a) * r * 1.6f);
@@ -408,131 +444,152 @@ public class GameRenderer extends JPanel {
                 g.setStroke(new BasicStroke(6f * fade));
                 g.drawLine(px, py, lx, ly);
                 g.setStroke(new BasicStroke(1));
-                // Wide cone behind
-                drawFan(g, px, py, a, r, 140, new Color(255, 255, 100, (int)(40 * fade)));
+                // Wide cone behind - outline
+                drawFanOutline(g, px, py, a, r, 140, new Color(255, 255, 100, (int)(80 * fade)));
             } else if ("地震打击".equals(n)) {
-                // Expanding circle
+                // Expanding circle - multi-layer rings
                 float expand = 1f - fade;
                 int er = (int)(r * 0.8f + expand * r);
-                g.setColor(new Color(180, 140, 50, (int)(80 * fade)));
-                g.fillOval(px - er, py - er, er * 2, er * 2);
-                g.setColor(new Color(200, 160, 60, (int)(180 * fade)));
+                g.setColor(new Color(180, 140, 50, (int)(50 * fade)));
+                g.setStroke(new BasicStroke(4));
                 g.drawOval(px - er, py - er, er * 2, er * 2);
+                g.setColor(new Color(200, 160, 60, (int)(180 * fade)));
+                g.setStroke(new BasicStroke(2));
+                g.drawOval(px - er, py - er, er * 2, er * 2);
+                g.setStroke(new BasicStroke(1));
             } else if ("连斩".equals(n)) {
                 int count = PlayerSkillHandler.instance.getSkillLevel(p.rightClickSpecial) >= 2 ? 5 : 3;
                 for (int i = 0; i < count; i++) {
                     float offset = (i - (count-1)/2f) * 0.25f;
                     float sa = a + offset;
-                    drawSlashLine(g, px, py, sa, r * 0.9f, new Color(255, 255, 255, (int)(120 * fade)));
+                    drawSlashLine(g, px, py, sa, r * 0.9f, new Color(255, 255, 255, (int)(180 * fade)));
                 }
             } else if ("吸血打击".equals(n)) {
-                // Red narrow cone + healing flash
-                drawFan(g, px, py, a, r * 1.3f, 60, new Color(220, 40, 40, (int)(100 * fade)));
-                g.setColor(new Color(255, 100, 100, (int)(60 * fade)));
-                g.fillOval(px - 20, py - 20, 40, 40);
+                // Red narrow cone + healing ring
+                drawFanOutline(g, px, py, a, r * 1.3f, 60, new Color(220, 40, 40, (int)(150 * fade)));
+                g.setColor(new Color(255, 100, 100, (int)(120 * fade)));
+                g.setStroke(new BasicStroke(3));
+                g.drawOval(px - 18, py - 18, 36, 36);
+                g.setStroke(new BasicStroke(1));
             } else {
-                // Default: 重斩 - standard wide cone + slash
-                drawFan(g, px, py, a, r, 140, new Color(100, 200, 255, (int)(80 * fade)));
+                // Default: 重斩 - wide outline cone + slash
+                drawFanOutline(g, px, py, a, r, 140, new Color(100, 200, 255, (int)(150 * fade)));
                 float slashA = a - (float)Math.toRadians(70) + (float)Math.toRadians(140) * (1f - fade);
-                drawSlashLine(g, px, py, slashA, r * 0.9f, new Color(255, 255, 255, (int)(200 * fade)));
+                drawSlashLine(g, px, py, slashA, r * 0.9f, new Color(255, 255, 255, (int)(220 * fade)));
             }
         }
 
-        // ── Normal attack swing arc (polygon fan, stable angle) ──
+        // ── Normal attack swing arc (neon outline arcs) ──
         if (p.attackTimer > 0) {
             float progress = 1f - Math.min(1f, p.attackTimer * p.attackSpeed);
             float fade = 1f - progress * progress;
             float r = p.attackRange;
             float a = p.swingAngle; // snapped on attack start, doesn't jitter
 
-            // Build polygon fan: 5 points across ±55° from swingAngle
-            int n = 7;
-            int[] xp = new int[n + 2];
-            int[] yp = new int[n + 2];
-            xp[0] = px; yp[0] = py;
-            for (int i = 0; i <= n; i++) {
-                float t = (float)i / n;
-                float aa = a - (float)Math.toRadians(55) + (float)Math.toRadians(110) * t;
-                xp[i + 1] = px + (int)(Math.cos(aa) * r);
-                yp[i + 1] = py + (int)(Math.sin(aa) * r);
-            }
-            // Enchant-tinted arc fill
+            // Enchant-tinted outer glow arc (thick, semi-transparent)
             Color arcColor = getEnchantArcColor(p);
-            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(80 * fade)));
-            g.fillPolygon(xp, yp, n + 2);
+            int arcStart = (int)Math.toDegrees(a) - 55;
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(40 * fade)));
+            g.setStroke(new BasicStroke(6));
+            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, arcStart, 110);
+
+            // Inner bright arc
+            g.setColor(new Color(arcColor.getRed(), arcColor.getGreen(), arcColor.getBlue(), (int)(160 * fade)));
+            g.setStroke(new BasicStroke(2));
+            g.drawArc(px - (int)r, py - (int)r, (int)r * 2, (int)r * 2, arcStart, 110);
+            g.setStroke(new BasicStroke(1));
 
             // Slash line sweeps within the arc (stable, based on progress not live angle)
             float slashA = a - (float)Math.toRadians(55) + (float)Math.toRadians(110) * progress;
             int sx = px + (int)(Math.cos(slashA) * r * 0.85f);
             int sy = py + (int)(Math.sin(slashA) * r * 0.85f);
-            g.setColor(new Color(255, 255, 255, (int)(180 * fade)));
+            g.setColor(new Color(255, 255, 255, (int)(200 * fade)));
             g.setStroke(new BasicStroke(2.5f * fade));
             g.drawLine(px, py, sx, sy);
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── E skill FX ──
+        // ── E skill FX (neon outline style) ──
         if (p.eFxTimer > 0) {
             float fade = p.eFxTimer / 0.5f;
             String name = p.lastECastName;
             if (name != null) {
                 if (name.contains("治疗") || name.contains("回复")) {
-                    g.setColor(new Color(100, 255, 100, (int)(120 * fade)));
-                    g.fillOval(px - 25, py - 25, 50, 50);
+                    g.setColor(new Color(80, 255, 80, (int)(60 * fade)));
+                    g.setStroke(new BasicStroke(5));
+                    g.drawOval(px - 22, py - 22, 44, 44);
+                    g.setColor(new Color(80, 255, 80, (int)(180 * fade)));
+                    g.setStroke(new BasicStroke(2));
+                    g.drawOval(px - 22, py - 22, 44, 44);
+                    g.setStroke(new BasicStroke(1));
                 } else if (name.contains("毒") || name.contains("雾")) {
-                    // Green poison AoE circle
+                    // Green poison AoE ring
                     int er = (int)(p.attackRange * 2f);
-                    g.setColor(new Color(80, 200, 50, (int)(60 * fade)));
-                    g.fillOval(px - er, py - er, er * 2, er * 2);
-                    g.setColor(new Color(50, 255, 50, (int)(150 * fade)));
-                    g.setStroke(new BasicStroke(1.5f));
+                    g.setColor(new Color(0, 255, 100, (int)(30 * fade)));
+                    g.setStroke(new BasicStroke(5));
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(0, 255, 100, (int)(180 * fade)));
+                    g.setStroke(new BasicStroke(2));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
                     g.setStroke(new BasicStroke(1));
                 } else if (name.contains("震荡") || name.contains("地震") || name.contains("践踏")) {
                     int er = (int)(p.attackRange * 2f);
-                    g.setColor(new Color(180, 140, 50, (int)(80 * fade)));
-                    g.fillOval(px - er, py - er, er * 2, er * 2);
-                    g.setColor(new Color(200, 160, 60, (int)(180 * fade)));
+                    g.setColor(new Color(180, 140, 50, (int)(40 * fade)));
+                    g.setStroke(new BasicStroke(5));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
-                } else if (name.contains("旋风")) {
-                    // handled by whirl visual
-                } else if (name.contains("吸血")) {
-                    // Red healing glow matching actual range (attackRange * 1.5)
-                    int er = (int)(p.attackRange * 1.5f);
-                    g.setColor(new Color(220, 40, 40, (int)(80 * fade)));
-                    g.fillOval(px - er, py - er, er * 2, er * 2);
-                    g.setColor(new Color(255, 80, 80, (int)(140 * fade)));
+                    g.setColor(new Color(200, 160, 60, (int)(200 * fade)));
                     g.setStroke(new BasicStroke(2));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
                     g.setStroke(new BasicStroke(1));
-                    // Central burst
-                    g.setColor(new Color(255, 40, 40, (int)(160 * fade)));
-                    g.fillOval(px - 12, py - 12, 24, 24);
+                } else if (name.contains("旋风")) {
+                    // handled by whirl visual
+                } else if (name.contains("吸血")) {
+                    // Red healing ring - multi-layer outlines
+                    int er = (int)(p.attackRange * 1.5f);
+                    g.setColor(new Color(220, 40, 40, (int)(40 * fade)));
+                    g.setStroke(new BasicStroke(5));
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(255, 80, 80, (int)(180 * fade)));
+                    g.setStroke(new BasicStroke(2));
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
+                    g.setStroke(new BasicStroke(1));
+                    // Central burst ring
+                    g.setColor(new Color(255, 40, 40, (int)(200 * fade)));
+                    g.setStroke(new BasicStroke(2));
+                    g.drawOval(px - 11, py - 11, 22, 22);
+                    g.setStroke(new BasicStroke(1));
                 } else {
-                    // Projectile spawn flash
-                    g.setColor(new Color(255, 255, 150, (int)(100 * fade)));
-                    g.fillOval(px - 12, py - 12, 24, 24);
+                    // Projectile spawn flash ring
+                    g.setColor(new Color(255, 255, 150, (int)(50 * fade)));
+                    g.setStroke(new BasicStroke(4));
+                    g.drawOval(px - 12, py - 12, 24, 24);
+                    g.setColor(new Color(255, 255, 150, (int)(180 * fade)));
+                    g.setStroke(new BasicStroke(2));
+                    g.drawOval(px - 12, py - 12, 24, 24);
+                    g.setStroke(new BasicStroke(1));
                 }
             }
         }
 
-        // ── Whirl/雷暴 AoE FX ──
+        // ── Whirl/雷暴 AoE FX (neon outline rings) ──
         if (p.whirlTimer > 0) {
             String qName = p.qUltimate != null ? p.qUltimate.skillName : "";
             boolean isStorm = qName.contains("雷暴");
             float wr = isStorm ? p.attackRange * 2.5f : p.attackRange * 1.5f;
             Color wc = isStorm ? new Color(255, 220, 50) : new Color(100, 255, 200);
 
-            // Pulsing fill
+            // Pulsing rings (multi-layer outlines)
             float pulse = (float)Math.sin(p.whirlTimer * 12);
+            // Outer glow ring
             g.setColor(new Color(wc.getRed(), wc.getGreen(), wc.getBlue(), (int)(25 + pulse * 20)));
-            g.fillOval(px - (int)wr, py - (int)wr, (int)wr * 2, (int)wr * 2);
-            // Ring
+            g.setStroke(new BasicStroke(5));
+            g.drawOval(px - (int)wr, py - (int)wr, (int)wr * 2, (int)wr * 2);
+            // Inner bright ring
             g.setColor(new Color(wc.getRed(), wc.getGreen(), wc.getBlue(), (int)(100 + pulse * 50)));
             g.setStroke(new BasicStroke(2));
             g.drawOval(px - (int)wr, py - (int)wr, (int)wr * 2, (int)wr * 2);
 
-            // Spin particles (whirl only)
+            // Spin particles (whirl only) - small bright dots
             if (!isStorm) {
                 long seed = (long)(p.whirlTimer * 100);
                 Random rr = new Random(seed);
@@ -540,8 +597,8 @@ public class GameRenderer extends JPanel {
                     float a = (float)(i * Math.PI * 2 / 8 + p.whirlTimer * 5);
                     int dx = px + (int)(Math.cos(a) * wr * 0.7f);
                     int dy = py + (int)(Math.sin(a) * wr * 0.7f);
-                    g.setColor(new Color(100, 255, 200, (int)(80 + pulse * 30)));
-                    g.fillOval(dx - 3, dy - 3, 6, 6);
+                    g.setColor(new Color(100, 255, 200, 180));
+                    g.fillOval(dx - 2, dy - 2, 4, 4);
                 }
             } else {
                 // Lightning spark particles
@@ -565,22 +622,33 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Body ──
-        Color bodyColor = p.isInvincible ? new Color(100, 200, 255, 160) : new Color(50, 150, 255);
-        g.setColor(bodyColor);
-        g.fillOval(px - 11, py - 11, 22, 22);
+        // ── Body (neon cyan multi-layer outline) ──
+        Color bodyColor = p.isInvincible ? new Color(255, 255, 255, 220) : new Color(0, 255, 255);
 
-        // ── Enchant glows ──
-        for (int i = 0; i < p.enchantSlots; i++) {
-            if (p.enchantElements[i] != null) drawEnchantGlow(g, px, py, p.enchantElements[i], bodyColor, 14 + i * 8);
-        }
+        // Dash boost: thicker outer glow
+        float glowThickness = p.isDashing ? 12f : 8f;
+        Color glowColor = p.isInvincible ? new Color(255, 255, 255, 60) : new Color(0, 255, 255, 60);
 
-        g.setColor(Color.WHITE);
+        // Outer glow (thick + semi-transparent)
+        g.setColor(glowColor);
+        g.setStroke(new BasicStroke(glowThickness));
         g.drawOval(px - 11, py - 11, 22, 22);
+
+        // Inner bright line
+        g.setColor(bodyColor);
+        g.setStroke(new BasicStroke(2));
+        g.drawOval(px - 11, py - 11, 22, 22);
+
+        g.setStroke(new BasicStroke(1));
+
+        // ── Enchant glows (small colored outline rings) ──
+        for (int i = 0; i < p.enchantSlots; i++) {
+            if (p.enchantElements[i] != null) drawEnchantGlowNeon(g, px, py, p.enchantElements[i], 14 + i * 8);
+        }
 
         // ── Damage taken text ──
         if (p.hitFlashTimer > 0) {
-            g.setColor(Color.ORANGE);
+            g.setColor(new Color(255, 150, 50));
             g.setFont(new Font("SansSerif", Font.BOLD, 12));
             g.drawString(String.format("-%.0f", p.lastDamageTaken), px - 10, py - 25 - (int)((1 - p.hitFlashTimer / 0.1f) * 12));
         }
@@ -588,22 +656,22 @@ public class GameRenderer extends JPanel {
         // ── Aim line ──
         int ax = px + (int)(p.aimDirection.x * 20);
         int ay = py + (int)(p.aimDirection.y * 20);
-        g.setColor(Color.YELLOW);
+        g.setColor(new Color(0, 255, 255, 150));
         g.setStroke(new BasicStroke(2));
         g.drawLine(px, py, ax, ay);
         g.setStroke(new BasicStroke(1));
 
-        // ── Range ring ──
-        g.setColor(new Color(255, 255, 100, 20));
+        // ── Range ring (subtle neon) ──
+        g.setColor(new Color(0, 255, 255, 20));
         int ar = (int)p.attackRange;
         g.drawOval(px - ar, py - ar, ar * 2, ar * 2);
 
-        // ── Dash charge dots ──
+        // ── Dash charge dots (neon cyan) ──
         for (int i = 0; i < p.maxDashCharges; i++) {
             float a = (float)(i * 2 * Math.PI / Math.max(1, p.maxDashCharges) - Math.PI / 2);
             int dx = px + (int)(Math.cos(a) * 18);
             int dy = py + (int)(Math.sin(a) * 18);
-            g.setColor(i < p.currentDashCharges ? Color.CYAN : Color.DARK_GRAY);
+            g.setColor(i < p.currentDashCharges ? new Color(0, 255, 255) : new Color(30, 30, 50));
             g.fillOval(dx - 3, dy - 3, 6, 6);
         }
     }
@@ -611,51 +679,54 @@ public class GameRenderer extends JPanel {
     private void drawEnemy(Graphics2D g, EnemyBase e) {
         int ex = (int)e.position.x, ey = (int)e.position.y;
 
-        // Telegraph growing circle
+        // Telegraph growing circle (neon outline)
         if (e.isTelegraphing) {
             float progress = 1f - (e.telegraphTimer / (e.queuedSkill != null ? e.queuedSkill.telegraphDuration : 0.5f));
             int tr = (int)(20 + progress * 35);
-            g.setColor(new Color(255, 60, 60, 30 + (int)(progress * 80)));
-            g.fillOval(ex - tr, ey - tr, tr * 2, tr * 2);
-            g.setColor(new Color(255, 200, 0));
+            g.setColor(new Color(255, 0, 255, (int)(30 + progress * 80)));
+            g.setStroke(new BasicStroke(3));
             g.drawOval(ex - tr, ey - tr, tr * 2, tr * 2);
+            g.setColor(new Color(255, 200, 0));
+            g.setStroke(new BasicStroke(1.5f));
+            g.drawOval(ex - tr, ey - tr, tr * 2, tr * 2);
+            g.setStroke(new BasicStroke(1));
         }
 
-        // ── Enemy attack FX: melee arc or charge trail ──
+        // ── Enemy attack FX: melee arc outline ──
         if (e.attackFxTimer > 0) {
             float fade = e.attackFxTimer / 0.3f;
             float a = (float)Math.atan2(e.lastAttackDir.y, e.lastAttackDir.x);
-            // Red melee arc
-            drawFan(g, ex, ey, a, 50, 80, new Color(255, 60, 40, (int)(80 * fade)));
-            drawSlashLine(g, ex, ey, a, 40, new Color(255, 150, 100, (int)(150 * fade)));
+            // Red melee outline arc
+            drawFanOutline(g, ex, ey, a, 50, 80, new Color(255, 60, 40, (int)(120 * fade)));
+            drawSlashLine(g, ex, ey, a, 40, new Color(255, 150, 100, (int)(200 * fade)));
         }
 
-        // Slow effect indicator (blue tint)
+        // Base enemy color: preset = neon magenta, past life = neon gold
         Color enemyColor;
         if (e.source == EnemySource.PAST_LIFE) {
-            enemyColor = pastLifeColor(e.pastLifeId);
+            enemyColor = new Color(255, 215, 0);  // neon gold
         } else {
-            enemyColor = new Color(220, 80, 80);
+            enemyColor = new Color(255, 0, 255);   // neon magenta
         }
+        // Status tint adjustments (dimmer for outline style)
         if (e.slowTimer > 0) {
-            enemyColor = blendColor(enemyColor, new Color(80, 150, 255), 0.4f);
+            enemyColor = blendColor(enemyColor, new Color(0, 200, 255), 0.3f);
         }
         if (e.burnTimer > 0) {
-            enemyColor = blendColor(enemyColor, new Color(255, 100, 20), 0.5f);
+            enemyColor = blendColor(enemyColor, new Color(255, 80, 255), 0.4f);
         }
         if (e.poisonStacks > 0) {
-            enemyColor = blendColor(enemyColor, new Color(120, 255, 50), 0.4f);
+            enemyColor = blendColor(enemyColor, new Color(0, 255, 100), 0.3f);
         }
 
-        // Body with pattern based on pastLifeId
-        g.setColor(enemyColor);
         int size = 13;
 
-        // Hit flash overlay
+        // Hit flash overlay (thick white outline)
         if (e.hitFlashTimer > 0) {
-            // White flash
-            g.setColor(new Color(255, 255, 255, 200));
-            g.fillOval(ex - size - 2, ey - size - 2, (size + 2) * 2, (size + 2) * 2);
+            // White thick flash ring
+            g.setColor(new Color(255, 255, 255, (int)(200 * (e.hitFlashTimer / 0.12f))));
+            g.setStroke(new BasicStroke(4));
+            g.drawOval(ex - size - 3, ey - size - 3, (size + 3) * 2, (size + 3) * 2);
             // Impact ring (expanding)
             float ringR = 20 + (0.12f - e.hitFlashTimer) / 0.12f * 25;
             g.setColor(new Color(255, 255, 255, (int)(150 * (e.hitFlashTimer / 0.12f))));
@@ -672,14 +743,14 @@ public class GameRenderer extends JPanel {
                 g.setColor(new Color(255, 255, 100, (int)(180 * (e.hitFlashTimer / 0.1f))));
                 g.fillOval(px - 2, py - 2, 4, 4);
             }
-            // Damage number
-            g.setColor(Color.YELLOW);
+            // Damage number (neon yellow)
+            g.setColor(new Color(255, 255, 0));
             g.setFont(new Font("SansSerif", Font.BOLD, 11));
             String dmgText = String.format("%.0f", e.lastDamageTaken);
             g.drawString(dmgText, ex - 10, ey - 20 - (int)((1 - e.hitFlashTimer / 0.1f) * 15));
         }
 
-        // Burn damage number (orange, floats up)
+        // Burn damage number (neon orange)
         if (e.burnFlashTimer > 0) {
             g.setColor(new Color(255, 160, 30, (int)(200 * (e.burnFlashTimer / 0.2f))));
             g.setFont(new Font("SansSerif", Font.BOLD, 11));
@@ -687,45 +758,62 @@ public class GameRenderer extends JPanel {
             g.drawString(burnText, ex - 10, ey - 22 - (int)((1 - e.burnFlashTimer / 0.2f) * 18));
         }
 
-        g.setColor(enemyColor);
-        if (e.source == EnemySource.PAST_LIFE && e.pastLifeId > 0) {
-            // Draw patterned circle for past life
-            g.fillOval(ex - size, ey - size, size * 2, size * 2);
-            // Pattern: number of stripes = (pastLifeId % 5) + 1
-            int stripes = (e.pastLifeId % 5) + 1;
-            g.setColor(enemyColor.darker());
-            for (int i = 0; i < stripes; i++) {
-                double angle = (i * 2 * Math.PI / stripes) - Math.PI / 2;
-                int sx = ex + (int)(Math.cos(angle) * size * 0.6);
-                int sy = ey + (int)(Math.sin(angle) * size * 0.6);
-                g.fillOval(sx - 3, sy - 3, 6, 6);
-            }
-        } else {
-            g.fillOval(ex - size, ey - size, size * 2, size * 2);
-        }
-        g.setColor(Color.WHITE);
+        // ── Enemy body: multi-layer neon outline ──
+        // Outer glow (thick + semi-transparent)
+        g.setColor(new Color(enemyColor.getRed(), enemyColor.getGreen(), enemyColor.getBlue(), 60));
+        g.setStroke(new BasicStroke(6));
         g.drawOval(ex - size, ey - size, size * 2, size * 2);
 
-        // Label
+        // Inner bright line
+        g.setColor(enemyColor);
+        g.setStroke(new BasicStroke(2));
+        g.drawOval(ex - size, ey - size, size * 2, size * 2);
+
+        // Past life pattern: small dots along the ring
+        if (e.source == EnemySource.PAST_LIFE && e.pastLifeId > 0) {
+            int stripes = (e.pastLifeId % 5) + 1;
+            for (int i = 0; i < stripes; i++) {
+                double angle = (i * 2 * Math.PI / stripes) - Math.PI / 2;
+                int sx = ex + (int)(Math.cos(angle) * size);
+                int sy = ey + (int)(Math.sin(angle) * size);
+                g.setColor(new Color(255, 215, 0, 200));
+                g.fillOval(sx - 2, sy - 2, 4, 4);
+            }
+        }
+
+        g.setStroke(new BasicStroke(1));
+
+        // Label (neon color)
         g.setFont(new Font("SansSerif", Font.PLAIN, 9));
         String label;
+        Color labelColor;
         if (e.source == EnemySource.PAST_LIFE) {
             label = "前世#" + e.pastLifeId;
+            labelColor = new Color(255, 215, 0);
         } else {
             label = "Lv" + e.layerNumber;
+            labelColor = new Color(255, 0, 255);
         }
+        g.setColor(labelColor);
         FontMetrics fm = g.getFontMetrics();
         g.drawString(label, ex - fm.stringWidth(label) / 2, ey - 18);
 
-        // HP bar
+        // HP bar (neon thin bar)
         float hpPct = Math.max(0, e.currentHp / e.maxHp);
         int bw = 40, bh = 5;
         int bx = ex - bw / 2, by = ey - 26;
-        g.setColor(Color.DARK_GRAY);
+        // Dark background
+        g.setColor(new Color(40, 0, 40));
         g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
-        Color barColor = hpPct > 0.5f ? Color.GREEN : (hpPct > 0.25f ? Color.YELLOW : Color.RED);
-        g.setColor(barColor);
+        // Bright foreground
+        Color hpBarColor = hpPct > 0.5f ? new Color(255, 0, 255, 200) : (hpPct > 0.25f ? new Color(255, 215, 0, 200) : new Color(255, 50, 50, 200));
+        g.setColor(hpBarColor);
         g.fillRect(bx, by, (int)(bw * hpPct), bh);
+        // Glow border
+        g.setColor(new Color(255, 0, 255, 100));
+        g.setStroke(new BasicStroke(1));
+        g.drawRect(bx - 1, by - 1, bw + 2, bh + 2);
+        g.setStroke(new BasicStroke(1));
     }
 
     /** Generate a unique color from past life ID using golden angle hue spread */
@@ -748,37 +836,48 @@ public class GameRenderer extends JPanel {
         if (stats == null) return;
 
         int x = 15, y = 15;
-        g.setColor(new Color(0, 0, 0, 150));
-        g.fillRoundRect(x, y, 250, 110, 10, 10);
 
-        // HP bar
-        g.setColor(Color.DARK_GRAY);
+        // Semi-transparent dark panel
+        g.setColor(new Color(0, 0, 0, 160));
+        g.fillRoundRect(x, y, 250, 110, 10, 10);
+        // Cyan border
+        g.setColor(new Color(0, 255, 255, 60));
+        g.drawRoundRect(x, y, 250, 110, 10, 10);
+
+        // HP bar (neon style)
+        g.setColor(new Color(40, 0, 40));
         g.fillRect(x + 8, y + 8, 234, 18);
         float hpPct = Math.max(0, stats.currentHp / stats.maxHp);
-        Color hpColor = hpPct > 0.5f ? new Color(50, 200, 50) : (hpPct > 0.25f ? Color.YELLOW : Color.RED);
+        Color hpColor = hpPct > 0.5f ? new Color(0, 255, 255, 200) : (hpPct > 0.25f ? new Color(255, 215, 0, 200) : new Color(255, 50, 50, 200));
         g.setColor(hpColor);
         g.fillRect(x + 8, y + 8, (int)(234 * hpPct), 18);
-        g.setColor(Color.WHITE);
+        // Glow border
+        g.setColor(new Color(0, 255, 255, 100));
+        g.setStroke(new BasicStroke(1));
         g.drawRect(x + 8, y + 8, 234, 18);
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g.setColor(new Color(0, 255, 255));
         String hpText = String.format("HP %.0f / %.0f", stats.currentHp, stats.maxHp);
         FontMetrics fm = g.getFontMetrics();
         g.drawString(hpText, x + 125 - fm.stringWidth(hpText) / 2, y + 22);
 
+        // Layer info (neon cyan)
         g.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g.setColor(new Color(0, 255, 255));
         g.drawString("第 " + gm.currentLayer + " / 100 层", x + 8, y + 48);
 
         g.setFont(new Font("SansSerif", Font.PLAIN, 11));
         int rowY = y + 65;
 
-        // Dash
+        // Dash (neon cyan)
+        g.setColor(new Color(0, 255, 255, 180));
         g.drawString("空格: 冲刺 " + pc.currentDashCharges + "/" + pc.maxDashCharges, x + 8, rowY);
 
         // Q ultimate
         String qStr = "Q: " + (pc.qUltimate != null ? pc.qUltimate.skillName : "无");
         if (pc.qCooldown > 0) qStr += String.format(" %.0fs", pc.qCooldown);
         else qStr += " 就绪";
-        g.setColor(pc.qCooldown > 0 ? Color.GRAY : Color.GREEN);
+        g.setColor(pc.qCooldown > 0 ? new Color(60, 60, 60) : new Color(0, 255, 100));
         g.drawString(qStr, x + 130, rowY);
 
         rowY += 15;
@@ -787,27 +886,27 @@ public class GameRenderer extends JPanel {
         String eStr = "E: " + (pc.eUniversal != null ? pc.eUniversal.skillName : "空槽");
         if (pc.eUniversal != null && pc.eCooldown > 0) eStr += String.format(" %.0fs", pc.eCooldown);
         else if (pc.eUniversal != null) eStr += " 就绪";
-        g.setColor(pc.eUniversal == null ? Color.DARK_GRAY : (pc.eCooldown > 0 ? Color.GRAY : new Color(100, 255, 100)));
+        g.setColor(pc.eUniversal == null ? new Color(40, 40, 40) : (pc.eCooldown > 0 ? new Color(60, 60, 60) : new Color(0, 255, 100)));
         g.drawString(eStr, x + 8, rowY);
 
         // Right click
         String rStr = "右键: " + (pc.rightClickSpecial != null ? pc.rightClickSpecial.skillName : "武器特攻");
         if (pc.rightClickCooldown > 0) rStr += String.format(" %.0fs", pc.rightClickCooldown);
         else rStr += " 就绪";
-        g.setColor(pc.rightClickCooldown > 0 ? Color.GRAY : Color.CYAN);
+        g.setColor(pc.rightClickCooldown > 0 ? new Color(60, 60, 60) : new Color(0, 255, 255));
         g.drawString(rStr, x + 130, rowY);
 
         rowY += 15;
 
-        // Enchants
+        // Enchants (neon orange)
         StringBuilder eb = new StringBuilder();
         for (int i = 0; i < pc.enchantSlots; i++) if (pc.enchantElements[i] != null) eb.append(i>0?"+":"").append(pc.enchantElements[i]);
-        if (eb.length() > 0) { g.setColor(Color.ORANGE); g.drawString("附魔: " + eb.toString(), x + 8, rowY); }
+        if (eb.length() > 0) { g.setColor(new Color(255, 180, 50)); g.drawString("附魔: " + eb.toString(), x + 8, rowY); }
 
-        // Bottom hint
-        g.setColor(new Color(0, 0, 0, 120));
+        // Bottom hint (very dark, subtle)
+        g.setColor(new Color(0, 0, 0, 140));
         g.fillRoundRect(120, 572, 560, 22, 8, 8);
-        g.setColor(Color.GRAY);
+        g.setColor(new Color(40, 40, 60));
         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
         drawCentered(g, "WASD移动 | 鼠标瞄准 | 左键普攻 | 右键武器技 | Q大招 | E通用技 | 空格冲刺 | ESC暂停", 588);
     }
@@ -960,82 +1059,96 @@ public class GameRenderer extends JPanel {
     //  GAME OVER
     // ══════════════════════════════════════════════
     private void drawGameOver(Graphics2D g) {
-        g.setColor(new Color(0, 0, 0, 180));
+        g.setColor(new Color(0, 0, 0, 200));
         g.fillRect(0, 0, getWidth(), getHeight());
 
-        g.setColor(Color.RED);
-        drawTitle(g, "阵 亡", 120, 42);
+        g.setColor(new Color(255, 50, 50));
+        g.setFont(new Font("SansSerif", Font.BOLD, 42));
+        drawCentered(g, "阵 亡", 120);
 
-        g.setColor(Color.WHITE);
-        drawText(g, "你倒在了第 " + gm.currentLayer + " 层", 180, 18);
+        g.setColor(new Color(255, 0, 255));
+        g.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        drawCentered(g, "你倒在了第 " + gm.currentLayer + " 层", 180);
         if (gm.currentLayer > 1) {
-            drawText(g, "你的身影将成为第 " + (gm.currentLayer - 1) + " 层的敌人...", 210, 14);
+            g.setColor(new Color(255, 200, 0));
+            drawCentered(g, "你的身影将成为第 " + (gm.currentLayer - 1) + " 层的敌人...", 210);
         }
         int currencyGain = gm.currentLayer * 10;
-        drawText(g, "获得局外货币: " + currencyGain, 260, 16);
+        g.setColor(new Color(0, 255, 255));
+        drawCentered(g, "获得局外货币: " + currencyGain, 260);
 
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
         drawButton(g, "重新开始", 330, "restart", 0);
-        drawText(g, "按 ESC 返回主菜单", 400, 12);
+        g.setColor(new Color(100, 100, 100));
+        g.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        drawCentered(g, "按 ESC 返回主菜单", 400);
     }
 
     // ══════════════════════════════════════════════
     //  VICTORY
     // ══════════════════════════════════════════════
     private void drawVictory(Graphics2D g) {
-        g.setColor(new Color(0, 0, 0, 180));
+        g.setColor(new Color(0, 0, 0, 200));
         g.fillRect(0, 0, getWidth(), getHeight());
 
-        g.setColor(Color.YELLOW);
-        drawTitle(g, "通 关！", 120, 44);
+        g.setColor(new Color(255, 215, 0));
+        g.setFont(new Font("SansSerif", Font.BOLD, 44));
+        drawCentered(g, "通 关！", 120);
 
-        g.setColor(Color.WHITE);
-        drawText(g, "你征服了百层之镜", 190, 20);
-        drawText(g, "但你的身影将永远留在第99层...", 230, 14);
-        drawText(g, "下一次，最终的敌人将是你自己", 280, 16);
+        g.setColor(new Color(255, 255, 200));
+        g.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        drawCentered(g, "你征服了百层之镜", 190);
+        g.setColor(new Color(255, 200, 100));
+        drawCentered(g, "但你的身影将永远留在第99层...", 230);
+        g.setColor(new Color(0, 255, 255));
+        drawCentered(g, "下一次，最终的敌人将是你自己", 280);
 
         g.setFont(new Font("SansSerif", Font.BOLD, 16));
         drawButton(g, "继续", 350, "continue", 0);
     }
 
     private Color getEnchantArcColor(PlayerController p) {
-        if (p.enchantElements[0] == null) return new Color(255, 255, 200);
+        if (p.enchantElements[0] == null) return new Color(0, 255, 255);
         switch (p.enchantElements[0]) {
-            case "fire": return new Color(255, 160, 50);
-            case "ice": return new Color(120, 180, 255);
-            case "lightning": return new Color(255, 240, 80);
-            default: return new Color(255, 255, 200);
+            case "fire": return new Color(255, 80, 255);
+            case "ice": return new Color(0, 200, 255);
+            case "lightning": return new Color(255, 230, 50);
+            default: return new Color(0, 255, 255);
         }
     }
 
     // ── FX helpers ──
-    private void drawEnchantGlow(Graphics2D g, int cx, int cy, String elem, Color bodyColor, int offset) {
+    private void drawEnchantGlowNeon(Graphics2D g, int cx, int cy, String elem, int offset) {
         if (elem == null) return;
         Color glow;
         switch (elem) {
-            case "fire": glow = new Color(255, 100, 20, 100); break;
-            case "ice": glow = new Color(100, 180, 255, 100); break;
-            case "lightning": glow = new Color(255, 220, 50, 100); break;
-            default: glow = new Color(255, 255, 255, 60); break;
+            case "fire": glow = new Color(255, 80, 255, 120); break;
+            case "ice": glow = new Color(0, 200, 255, 120); break;
+            case "lightning": glow = new Color(255, 230, 50, 120); break;
+            default: glow = new Color(255, 255, 255, 80); break;
         }
         g.setColor(glow);
-        g.fillOval(cx - offset, cy - offset, offset * 2, offset * 2);
-        g.setColor(bodyColor);
-        g.fillOval(cx - 11, cy - 11, 22, 22);
+        g.setStroke(new BasicStroke(2));
+        g.drawOval(cx - offset, cy - offset, offset * 2, offset * 2);
+        g.setStroke(new BasicStroke(1));
     }
 
-    private void drawFan(Graphics2D g, int cx, int cy, float angle, float radius, int degrees, Color color) {
-        int n = 7;
-        int[] xp = new int[n + 2]; int[] yp = new int[n + 2];
-        xp[0] = cx; yp[0] = cy;
-        for (int i = 0; i <= n; i++) {
-            float t = (float)i / n;
-            float a = angle - (float)Math.toRadians(degrees / 2) + (float)Math.toRadians(degrees) * t;
-            xp[i + 1] = cx + (int)(Math.cos(a) * radius);
-            yp[i + 1] = cy + (int)(Math.sin(a) * radius);
-        }
+    private void drawFanOutline(Graphics2D g, int cx, int cy, float angle, float radius, int degrees, Color color) {
+        // Outer glow arc
+        g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha() / 3));
+        g.setStroke(new BasicStroke(4));
+        int arcStart = (int)Math.toDegrees(angle) - degrees / 2;
+        g.drawArc(cx - (int)radius, cy - (int)radius, (int)radius * 2, (int)radius * 2, arcStart, degrees);
+        // Inner bright arc
         g.setColor(color);
-        g.fillPolygon(xp, yp, n + 2);
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawArc(cx - (int)radius, cy - (int)radius, (int)radius * 2, (int)radius * 2, arcStart, degrees);
+        g.setStroke(new BasicStroke(1));
+    }
+
+    // Keep drawFan for backward compatibility (used by existing code) - redirect to outline
+    private void drawFan(Graphics2D g, int cx, int cy, float angle, float radius, int degrees, Color color) {
+        drawFanOutline(g, cx, cy, angle, radius, degrees, color);
     }
 
     private void drawSlashLine(Graphics2D g, int cx, int cy, float angle, float length, Color color) {
@@ -1047,12 +1160,21 @@ public class GameRenderer extends JPanel {
         g.setStroke(new BasicStroke(1));
     }
 
+    private void drawTriangleOutline(Graphics2D g, int cx, int cy, int s) {
+        int[] xs = {cx, cx - s, cx + s};
+        int[] ys = {cy - s, cy + s, cy + s};
+        g.drawPolygon(xs, ys, 3);
+    }
+
     private void drawPauseOverlay(Graphics2D g) {
-        g.setColor(new Color(0, 0, 0, 170));
+        g.setColor(new Color(0, 0, 0, 190));
         g.fillRect(0, 0, getWidth(), getHeight());
-        g.setColor(Color.WHITE);
-        drawTitle(g, "已暂停", 280, 36);
-        drawText(g, "按 ESC 继续", 340, 14);
+        g.setColor(new Color(0, 255, 255));
+        g.setFont(new Font("SansSerif", Font.BOLD, 36));
+        drawCentered(g, "已暂停", 280);
+        g.setColor(new Color(0, 200, 200, 150));
+        g.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        drawCentered(g, "按 ESC 继续", 340);
     }
 
     // ── centering ──
