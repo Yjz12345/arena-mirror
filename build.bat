@@ -9,5 +9,5 @@ if %ERRORLEVEL% NEQ 0 (
     pause
     exit /b 1
 )
-echo Build OK!
-javaw -Dsun.java2d.opengl=true -cp build arenamirror.Main
+echo Build OK! Running...
+"C:\Program Files\Common Files\Oracle\Java\javapath\java.exe" -cp build arenamirror.Main
