@@ -370,34 +370,46 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── Dash trail (neon outline style) ──
+        // ── Dash trail (neon bloom style) ──
         if (p.isDashing || (p.dashDirection != null)) {
             Vec2 trailDir = p.isDashing && p.dashDirection != null ? p.dashDirection : p.aimDirection;
             boolean fire = p.hasDashEffect("fire_trail");
             Color trailColor = fire ? new Color(255, 80, 255) : new Color(0, 255, 255);
 
-            // Large glow ring
+            // Large bloom ring
             if (fire) {
-                g.setColor(new Color(255, 80, 255, 40));
-                g.setStroke(new BasicStroke(8));
+                g.setColor(new Color(255, 80, 255, 20));
+                g.setStroke(new BasicStroke(16));
+                g.drawOval(px - 20, py - 20, 40, 40);
+                g.setColor(new Color(255, 80, 255, 60));
+                g.setStroke(new BasicStroke(10));
                 g.drawOval(px - 16, py - 16, 32, 32);
                 g.setStroke(new BasicStroke(1));
             }
-            // Trail segments as thick outline lines
-            for (int i = 1; i <= 5; i++) {
-                float trailX = px - trailDir.x * i * 8;
-                float trailY = py - trailDir.y * i * 8;
-                int alpha = fire ? 100 : 80 - i * 15;
+            // Trail segments as bloom rings
+            for (int i = 1; i <= 7; i++) {
+                float trailX = px - trailDir.x * i * 7;
+                float trailY = py - trailDir.y * i * 7;
+                int alpha = fire ? 120 : 100 - i * 12;
+                int sz = fire ? 8 : 6;
+                // Bloom layer
+                g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), Math.max(5, alpha / 3)));
+                g.setStroke(new BasicStroke(sz + 4));
+                g.drawOval((int)trailX - sz - 2, (int)trailY - sz - 2, (sz + 2) * 2, (sz + 2) * 2);
+                // Core ring
                 g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), Math.max(10, alpha)));
-                g.setStroke(new BasicStroke(4 - i * 0.5f));
-                g.drawOval((int)trailX - 5, (int)trailY - 5, 10, 10);
+                g.setStroke(new BasicStroke(sz / 2f));
+                g.drawOval((int)trailX - sz, (int)trailY - sz, sz * 2, sz * 2);
                 g.setStroke(new BasicStroke(1));
             }
-            // Front dash line
-            g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), fire ? 180 : 150));
-            g.setStroke(new BasicStroke(fire ? 5f : 3f));
-            int lx = px + (int)(trailDir.x * (fire ? 16 : 10));
-            int ly = py + (int)(trailDir.y * (fire ? 16 : 10));
+            // Front dash line - double layer glow
+            g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), fire ? 60 : 50));
+            g.setStroke(new BasicStroke(fire ? 12f : 8f));
+            int lx = px + (int)(trailDir.x * (fire ? 20 : 14));
+            int ly = py + (int)(trailDir.y * (fire ? 20 : 14));
+            g.drawLine(px, py, lx, ly);
+            g.setColor(new Color(trailColor.getRed(), trailColor.getGreen(), trailColor.getBlue(), fire ? 200 : 180));
+            g.setStroke(new BasicStroke(fire ? 4f : 2.5f));
             g.drawLine(px, py, lx, ly);
             g.setStroke(new BasicStroke(1));
         }
@@ -578,63 +590,89 @@ public class GameRenderer extends JPanel {
             g.setStroke(new BasicStroke(1));
         }
 
-        // ── E skill FX (neon outline style) ──
+        // ── E skill FX (full neon bloom style) ──
         if (p.eFxTimer > 0) {
             float fade = p.eFxTimer / 0.5f;
             String name = p.lastECastName;
             if (name != null) {
                 if (name.contains("治疗") || name.contains("回复")) {
-                    g.setColor(new Color(80, 255, 80, (int)(60 * fade)));
+                    // Triple-layer healing ring
+                    g.setColor(new Color(80, 255, 80, (int)(15 * fade)));
+                    g.fillOval(px - 25, py - 25, 50, 50);
+                    g.setColor(new Color(80, 255, 80, (int)(20 * fade)));
+                    g.setStroke(new BasicStroke(10));
+                    g.drawOval(px - 22, py - 22, 44, 44);
+                    g.setColor(new Color(80, 255, 80, (int)(80 * fade)));
                     g.setStroke(new BasicStroke(5));
                     g.drawOval(px - 22, py - 22, 44, 44);
-                    g.setColor(new Color(80, 255, 80, (int)(180 * fade)));
-                    g.setStroke(new BasicStroke(2));
+                    g.setColor(new Color(80, 255, 80, (int)(220 * fade)));
+                    g.setStroke(new BasicStroke(2.5f));
                     g.drawOval(px - 22, py - 22, 44, 44);
                     g.setStroke(new BasicStroke(1));
                 } else if (name.contains("毒") || name.contains("雾")) {
-                    // Green poison AoE ring
+                    // Green poison AoE - bloom rings
                     int er = (int)(p.attackRange * 2f);
-                    g.setColor(new Color(0, 255, 100, (int)(30 * fade)));
+                    g.setColor(new Color(0, 255, 100, (int)(10 * fade)));
+                    g.fillOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(0, 255, 100, (int)(15 * fade)));
+                    g.setStroke(new BasicStroke(10));
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(0, 255, 100, (int)(60 * fade)));
                     g.setStroke(new BasicStroke(5));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
-                    g.setColor(new Color(0, 255, 100, (int)(180 * fade)));
+                    g.setColor(new Color(0, 255, 100, (int)(200 * fade)));
                     g.setStroke(new BasicStroke(2));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
                     g.setStroke(new BasicStroke(1));
                 } else if (name.contains("震荡") || name.contains("地震") || name.contains("践踏")) {
                     int er = (int)(p.attackRange * 2f);
-                    g.setColor(new Color(180, 140, 50, (int)(40 * fade)));
+                    g.setColor(new Color(180, 140, 50, (int)(10 * fade)));
+                    g.fillOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(180, 140, 50, (int)(20 * fade)));
+                    g.setStroke(new BasicStroke(10));
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(180, 140, 50, (int)(70 * fade)));
                     g.setStroke(new BasicStroke(5));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
-                    g.setColor(new Color(200, 160, 60, (int)(200 * fade)));
-                    g.setStroke(new BasicStroke(2));
+                    g.setColor(new Color(220, 180, 80, (int)(200 * fade)));
+                    g.setStroke(new BasicStroke(2.5f));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
                     g.setStroke(new BasicStroke(1));
                 } else if (name.contains("旋风")) {
                     // handled by whirl visual
                 } else if (name.contains("吸血")) {
-                    // Red healing ring - multi-layer outlines
+                    // Red healing ring - triple-layer bloom
                     int er = (int)(p.attackRange * 1.5f);
-                    g.setColor(new Color(220, 40, 40, (int)(40 * fade)));
+                    g.setColor(new Color(220, 40, 40, (int)(10 * fade)));
+                    g.fillOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(220, 40, 40, (int)(20 * fade)));
+                    g.setStroke(new BasicStroke(10));
+                    g.drawOval(px - er, py - er, er * 2, er * 2);
+                    g.setColor(new Color(255, 60, 40, (int)(80 * fade)));
                     g.setStroke(new BasicStroke(5));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
-                    g.setColor(new Color(255, 80, 80, (int)(180 * fade)));
+                    g.setColor(new Color(255, 100, 80, (int)(200 * fade)));
                     g.setStroke(new BasicStroke(2));
                     g.drawOval(px - er, py - er, er * 2, er * 2);
-                    g.setStroke(new BasicStroke(1));
                     // Central burst ring
-                    g.setColor(new Color(255, 40, 40, (int)(200 * fade)));
-                    g.setStroke(new BasicStroke(2));
-                    g.drawOval(px - 11, py - 11, 22, 22);
+                    g.setColor(new Color(255, 40, 40, (int)(60 * fade)));
+                    g.setStroke(new BasicStroke(6));
+                    g.drawOval(px - 13, py - 13, 26, 26);
+                    g.setColor(new Color(255, 100, 60, (int)(220 * fade)));
+                    g.setStroke(new BasicStroke(2.5f));
+                    g.drawOval(px - 13, py - 13, 26, 26);
                     g.setStroke(new BasicStroke(1));
                 } else {
-                    // Projectile spawn flash ring
-                    g.setColor(new Color(255, 255, 150, (int)(50 * fade)));
-                    g.setStroke(new BasicStroke(4));
-                    g.drawOval(px - 12, py - 12, 24, 24);
-                    g.setColor(new Color(255, 255, 150, (int)(180 * fade)));
+                    // Projectile spawn flash - bloom + bright ring
+                    g.setColor(new Color(255, 255, 150, (int)(20 * fade)));
+                    g.setStroke(new BasicStroke(10));
+                    g.drawOval(px - 14, py - 14, 28, 28);
+                    g.setColor(new Color(255, 255, 150, (int)(60 * fade)));
+                    g.setStroke(new BasicStroke(5));
+                    g.drawOval(px - 14, py - 14, 28, 28);
+                    g.setColor(new Color(255, 255, 150, (int)(200 * fade)));
                     g.setStroke(new BasicStroke(2));
-                    g.drawOval(px - 12, py - 12, 24, 24);
+                    g.drawOval(px - 14, py - 14, 28, 28);
                     g.setStroke(new BasicStroke(1));
                 }
             }
