@@ -1,15 +1,31 @@
-Write-Host "=== 角斗场：百层之镜 ===" -ForegroundColor Cyan
+$dir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $dir
+
+Write-Host "=== 角斗场：百层之镜 [Neon] ==="
 Write-Host "Compiling..."
 
-$src = Get-ChildItem -Path "src" -Recurse -Filter "*.java" | Select-Object -ExpandProperty FullName
-$null = New-Item -ItemType Directory -Force -Path "build"
+if (-not (Test-Path build)) { New-Item -ItemType Directory -Path build }
 
-& javac -d build -encoding UTF-8 $src
+$src = @(
+    "src\arenamirror\Main.java",
+    "src\arenamirror\core\*.java",
+    "src\arenamirror\player\*.java",
+    "src\arenamirror\enemies\*.java",
+    "src\arenamirror\data\*.java",
+    "src\arenamirror\skills\*.java",
+    "src\arenamirror\weapons\*.java",
+    "src\arenamirror\progression\*.java",
+    "src\arenamirror\traps\*.java",
+    "src\arenamirror\rendering\*.java"
+)
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Build successful!" -ForegroundColor Green
-    Write-Host "Running..."
-    & java -cp build arenamirror.Main
-} else {
-    Write-Host "Build failed." -ForegroundColor Red
+$result = javac -d build -encoding UTF8 $src 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build FAILED"
+    Write-Host $result
+    Read-Host
+    exit 1
 }
+
+Write-Host "Build OK! Running..."
+Start-Process -FilePath "C:\Program Files\Java\jdk-21\bin\java.exe" -ArgumentList "-cp","build","arenamirror.Main"
